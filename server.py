@@ -62,7 +62,7 @@ def gemini_list_models() -> list[dict[str, Any]] | dict[str, str]:
             )
         return out
     except Exception as exc:  # noqa: BLE001 - surface as structured error
-        return {"error": str(exc)}
+        return {"error": str(exc), "model": "n/a"}
 
 
 @mcp.tool()

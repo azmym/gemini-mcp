@@ -50,3 +50,4 @@ def test_list_models_wraps_sdk_errors(mock_genai_client: MagicMock) -> None:
     assert isinstance(result, dict)
     assert "error" in result
     assert "api down" in result["error"]
+    assert result["model"] == "n/a"

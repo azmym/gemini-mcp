@@ -28,7 +28,8 @@ def test_analyze_file_uploads_and_asks(
 
     mock_genai_client.files.upload.assert_called_once()
     upload_kwargs = mock_genai_client.files.upload.call_args.kwargs
-    assert str(pdf) == upload_kwargs.get("file") or upload_kwargs.get("path")
+    actual_path = upload_kwargs.get("file") or upload_kwargs.get("path")
+    assert actual_path == str(pdf)
     assert result["answer"] == "summary here"
     assert result["file_uri"] == "files/abc123"
     assert result["model"] == "gemini-2.5-pro"
