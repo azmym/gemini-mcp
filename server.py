@@ -10,6 +10,7 @@ from typing import Any
 
 from fastmcp import FastMCP
 from google import genai
+from google.genai import types as genai_types
 
 mcp = FastMCP("gemini")
 
@@ -59,6 +60,34 @@ def gemini_list_models() -> list[dict[str, Any]] | dict[str, str]:
         return out
     except Exception as exc:  # noqa: BLE001 - surface as structured error
         return {"error": str(exc)}
+
+
+@mcp.tool()
+def gemini_generate(
+    prompt: str,
+    system_instruction: str | None = None,
+    temperature: float = 0.7,
+    max_output_tokens: int | None = None,
+    model: str = "gemini-2.5-pro",
+) -> dict[str, Any]:
+    """Single-turn text generation with optional system prompt and sampling controls."""
+    chosen = _resolve_model(model)
+    try:
+        client = _ensure_client()
+        config = genai_types.GenerateContentConfig(
+            system_instruction=system_instruction,
+            temperature=temperature,
+            max_output_tokens=max_output_tokens,
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+        tokens = getattr(getattr(response, "usage_metadata", None), "total_token_count", 0) or 0
+        return {"text": response.text or "", "tokens_used": tokens, "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
 
 
 if __name__ == "__main__":
