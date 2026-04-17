@@ -137,6 +137,49 @@ def gemini_generate_image(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_code_execute(
+    prompt: str,
+    model: str = "gemini-2.5-pro",
+) -> dict[str, Any]:
+    """Ask Gemini to write and run Python code in its sandbox.
+
+    Returns the final answer plus the code and stdout.
+    """
+    chosen = _resolve_model(model)
+    try:
+        client = _ensure_client()
+        config = genai_types.GenerateContentConfig(
+            tools=[genai_types.Tool(code_execution=genai_types.ToolCodeExecution())],
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+
+        code_parts: list[str] = []
+        stdout_parts: list[str] = []
+        answer_parts: list[str] = []
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                if getattr(part, "executable_code", None):
+                    code_parts.append(part.executable_code.code or "")
+                elif getattr(part, "code_execution_result", None):
+                    stdout_parts.append(part.code_execution_result.output or "")
+                elif getattr(part, "text", None):
+                    answer_parts.append(part.text)
+
+        return {
+            "answer": "\n".join(answer_parts).strip() or (response.text or ""),
+            "code": "\n".join(code_parts),
+            "stdout": "\n".join(stdout_parts),
+            "model": chosen,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
 if __name__ == "__main__":
     _ensure_client()
     mcp.run()
