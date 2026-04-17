@@ -278,6 +278,11 @@ def gemini_chat(
         return {"error": str(exc), "model": chosen}
 
 
-if __name__ == "__main__":
+def main() -> None:
+    """CLI entry point. Registered in pyproject.toml as `gemini-mcp`."""
     _ensure_client()
     mcp.run()
+
+
+if __name__ == "__main__":
+    main()

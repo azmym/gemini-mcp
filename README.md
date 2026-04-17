@@ -31,30 +31,57 @@ Every tool accepts a `model` parameter to override the default for that call. Se
 
 ## Installation
 
-### With Claude Code (recommended)
+Pick the approach that matches how you plan to use the server. All three register the same `gemini` MCP server with Claude Code.
 
-Register the server as a user-scoped MCP server. Replace `/path/to/gemini-mcp` with the absolute path where you cloned this repository and `<your-key>` with your Google AI Studio API key.
+### Option A: Install directly from GitHub (no local clone)
+
+Best for most users. `uvx` fetches the repository, installs dependencies into an isolated cache, and runs the `gemini-mcp` entry point registered in `pyproject.toml`. Replace `<your-key>` with your Google AI Studio API key.
 
 ```bash
 claude mcp add gemini -s user \
   -e GEMINI_API_KEY=<your-key> \
-  -- uv --directory /path/to/gemini-mcp run python server.py
+  -- uvx --from git+https://github.com/azmym/gemini-mcp gemini-mcp
 ```
 
-This uses `uv run` so dependencies are resolved automatically from `pyproject.toml`. No separate install step is needed.
+On first invocation `uvx` clones the repo and installs `fastmcp` and `google-genai` (roughly 5 to 15 seconds cold start); subsequent calls are instant thanks to the uv cache. To upgrade to the latest `main`, run:
 
-### Manual / standalone
+```bash
+uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
+```
 
-Useful for testing outside of Claude Code:
+You can also pin to a specific tag or commit by appending `@<ref>`, for example `git+https://github.com/azmym/gemini-mcp@v0.1.0`.
+
+### Option B: Run from a local clone (best for development)
+
+Use this when you want to edit the code and iterate quickly. Replace `/path/to/gemini-mcp` with the absolute path where you cloned the repository.
 
 ```bash
 git clone https://github.com/azmym/gemini-mcp
 cd gemini-mcp
 uv sync
+
+claude mcp add gemini -s user \
+  -e GEMINI_API_KEY=<your-key> \
+  -- uv --directory /path/to/gemini-mcp run python server.py
+```
+
+Changes to `server.py` take effect the next time Claude Code restarts the MCP server.
+
+### Option C: Standalone manual run (testing without Claude Code)
+
+Launch the server directly to verify the environment is correct. The process speaks the MCP stdio transport and waits for a client to connect.
+
+```bash
+cd /path/to/gemini-mcp
 GEMINI_API_KEY=<your-key> uv run python server.py
 ```
 
-The server speaks the MCP stdio transport and will wait for client connections.
+After registering with Option A or B, verify the connection:
+
+```bash
+claude mcp list
+# Expected: gemini: ... - ✓ Connected
+```
 
 ## Configuration
 
@@ -168,14 +195,16 @@ All 28 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=objec
 
 ```
 gemini-mcp/
-├── server.py          # All MCP tool definitions (~280 lines)
-├── pyproject.toml     # Project metadata and dependencies
+├── server.py          # All MCP tool definitions and the `main()` entry point
+├── pyproject.toml     # Project metadata, dependencies, and `gemini-mcp` script
 ├── tests/             # 28 unit tests (offline, mocked)
 └── docs/
     └── superpowers/
         ├── specs/     # Design specification
         └── plans/     # Implementation plan
 ```
+
+The `gemini-mcp` console script is registered under `[project.scripts]` in `pyproject.toml` and points to `server:main`. This is what makes Option A above work: `uvx` installs the package, exposes the `gemini-mcp` command, and runs it.
 
 ## Known limitations
 
