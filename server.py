@@ -40,6 +40,27 @@ def _ensure_client() -> genai.Client:
     return _client
 
 
+@mcp.tool()
+def gemini_list_models() -> list[dict[str, Any]] | dict[str, str]:
+    """List available Gemini models with their capabilities and token limits."""
+    try:
+        client = _ensure_client()
+        out: list[dict[str, Any]] = []
+        for m in client.models.list():
+            name = m.name.removeprefix("models/") if m.name else ""
+            out.append(
+                {
+                    "name": name,
+                    "supported_actions": list(getattr(m, "supported_actions", []) or []),
+                    "input_token_limit": getattr(m, "input_token_limit", 0) or 0,
+                    "output_token_limit": getattr(m, "output_token_limit", 0) or 0,
+                }
+            )
+        return out
+    except Exception as exc:  # noqa: BLE001 - surface as structured error
+        return {"error": str(exc)}
+
+
 if __name__ == "__main__":
     _ensure_client()
     mcp.run()
