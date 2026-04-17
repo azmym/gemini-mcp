@@ -221,6 +221,34 @@ def gemini_search_grounded(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_analyze_file(
+    file_path: str,
+    prompt: str,
+    model: str = "gemini-2.5-pro",
+) -> dict[str, Any]:
+    """Upload a local file (PDF, image, audio, video) and ask Gemini about it."""
+    chosen = _resolve_model(model)
+    path = Path(file_path).expanduser().resolve()
+    if not path.is_file():
+        return {"error": f"File not found: {file_path}", "model": chosen}
+
+    try:
+        client = _ensure_client()
+        uploaded = client.files.upload(file=str(path))
+        response = client.models.generate_content(
+            model=chosen,
+            contents=[prompt, uploaded],
+        )
+        return {
+            "answer": (response.text or "").strip(),
+            "file_uri": getattr(uploaded, "uri", "") or getattr(uploaded, "name", ""),
+            "model": chosen,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
 if __name__ == "__main__":
     _ensure_client()
     mcp.run()
