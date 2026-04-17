@@ -90,6 +90,66 @@ claude mcp list
 | `GEMINI_API_KEY` | Yes | Google AI Studio API key (https://aistudio.google.com/app/apikey) |
 | `GEMINI_DEFAULT_MODEL` | No | Overrides the default model for every tool globally |
 
+## Model selection
+
+Every tool accepts a `model` parameter, so you can pick a different Gemini model for each call without changing any configuration. This is the recommended way to work with the server: defaults are tuned for the common case, and you override them only when a specific task benefits from a different model.
+
+Resolution order, from highest to lowest priority:
+
+1. The `model` argument on the individual tool call.
+2. The `GEMINI_DEFAULT_MODEL` environment variable, if set.
+3. The tool's built-in default (see the Features table above).
+
+### Choosing per call
+
+Pass `model` explicitly when you want a specific model for that call. The defaults stay untouched.
+
+```
+Tool: gemini_generate
+  prompt: "Explain CAP theorem in two paragraphs."
+  model: "gemini-3.1-pro-preview"
+```
+
+```
+Tool: gemini_generate_image
+  prompt: "Product photo of a wireless headset on a studio backdrop"
+  model: "gemini-3-pro-image-preview"
+```
+
+Call `gemini_list_models` to see every model your API key can access:
+
+```
+Tool: gemini_list_models
+```
+
+### Common choices
+
+| Goal | Model |
+|---|---|
+| Fast, cheap chat or short answers | `gemini-2.5-flash` |
+| Strongest stable reasoning, code, analysis | `gemini-2.5-pro` |
+| Latest preview, advanced reasoning | `gemini-3.1-pro-preview` |
+| Fast preview variant | `gemini-3-flash-preview` |
+| Stable image generation | `gemini-2.5-flash-image` |
+| Preview image generation | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
+| Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
+
+Preview models can change behavior or availability without notice. Stick to the stable models for workflows you rely on; use previews for experimentation.
+
+### Changing the global default
+
+If you want one model everywhere without passing it on every call, set `GEMINI_DEFAULT_MODEL` on the MCP server entry. For Claude Code users, re-add the server with the extra env flag:
+
+```bash
+claude mcp remove gemini -s user
+claude mcp add gemini -s user \
+  -e GEMINI_API_KEY=<your-key> \
+  -e GEMINI_DEFAULT_MODEL=gemini-3-flash-preview \
+  -- uvx --from git+https://github.com/azmym/gemini-mcp gemini-mcp
+```
+
+Explicit `model` arguments on individual tool calls still win over the env var.
+
 ## Usage examples
 
 ### Analyze a PDF
