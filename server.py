@@ -180,6 +180,47 @@ def gemini_code_execute(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_search_grounded(
+    prompt: str,
+    model: str = "gemini-2.5-flash",
+) -> dict[str, Any]:
+    """Text generation grounded with Google Search. Returns answer and citations."""
+    chosen = _resolve_model(model)
+    try:
+        client = _ensure_client()
+        config = genai_types.GenerateContentConfig(
+            tools=[genai_types.Tool(google_search=genai_types.GoogleSearch())],
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+
+        text_parts: list[str] = []
+        citations: list[dict[str, str]] = []
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                if getattr(part, "text", None):
+                    text_parts.append(part.text)
+            metadata = getattr(candidate, "grounding_metadata", None)
+            if metadata is None:
+                continue
+            for chunk in getattr(metadata, "grounding_chunks", []) or []:
+                web = getattr(chunk, "web", None)
+                if web and getattr(web, "uri", None):
+                    citations.append({"url": web.uri, "title": getattr(web, "title", "") or ""})
+
+        return {
+            "answer": "\n".join(text_parts).strip() or (response.text or ""),
+            "citations": citations,
+            "model": chosen,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
 if __name__ == "__main__":
     _ensure_client()
     mcp.run()
