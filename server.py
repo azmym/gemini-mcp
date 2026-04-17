@@ -6,6 +6,9 @@ Run with: uvx --from "fastmcp[cli]" fastmcp run server.py
 from __future__ import annotations
 
 import os
+import time
+import uuid
+from pathlib import Path
 from typing import Any
 
 from fastmcp import FastMCP
@@ -86,6 +89,50 @@ def gemini_generate(
         )
         tokens = getattr(getattr(response, "usage_metadata", None), "total_token_count", 0) or 0
         return {"text": response.text or "", "tokens_used": tokens, "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_generate_image(
+    prompt: str,
+    output_dir: str = "/tmp/gemini-images",
+    count: int = 1,
+    model: str = "gemini-2.5-flash-image",
+) -> dict[str, Any]:
+    """Generate images from a text prompt using a Gemini native image model.
+
+    Writes PNG files to `output_dir` and returns their absolute paths.
+    """
+    chosen = _resolve_model(model)
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["IMAGE"],
+            candidate_count=count,
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+
+        paths: list[str] = []
+        stamp = int(time.time())
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                fname = f"gemini-{stamp}-{uuid.uuid4().hex[:8]}.png"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                paths.append(str(fpath))
+
+        return {"paths": paths, "model": chosen}
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc), "model": chosen}
 
