@@ -5,7 +5,7 @@ description = "MCP server exposing Google Gemini capabilities via Google AI Stud
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
-    "fastmcp>=2.0.0",
+    "fastmcp>=3.2.0,<4",
     "google-genai>=0.3.0",
 ]
 

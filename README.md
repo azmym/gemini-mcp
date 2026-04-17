@@ -31,9 +31,9 @@ Every tool accepts a `model` parameter to override the default for that call. Se
 
 ## Installation
 
-Pick the approach that matches how you plan to use the server. All three register the same `gemini` MCP server with Claude Code.
+Pick the approach that matches how you plan to use the server. Options A and B register the `gemini` MCP server with Claude Code; Option C is a manual standalone run for verification.
 
-### Option A: Install directly from GitHub (no local clone)
+### Option A: install directly from GitHub (no local clone)
 
 Best for most users. `uvx` fetches the repository, installs dependencies into an isolated cache, and runs the `gemini-mcp` entry point registered in `pyproject.toml`. Replace `<your-key>` with your Google AI Studio API key.
 
@@ -51,7 +51,7 @@ uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
 
 You can also pin to a specific tag or commit by appending `@<ref>`, for example `git+https://github.com/azmym/gemini-mcp@v0.1.0`.
 
-### Option B: Run from a local clone (best for development)
+### Option B: run from a local clone (best for development)
 
 Use this when you want to edit the code and iterate quickly. Replace `/path/to/gemini-mcp` with the absolute path where you cloned the repository.
 
@@ -67,7 +67,7 @@ claude mcp add gemini -s user \
 
 Changes to `server.py` take effect the next time Claude Code restarts the MCP server.
 
-### Option C: Standalone manual run (testing without Claude Code)
+### Option C: standalone manual run (testing without Claude Code)
 
 Launch the server directly to verify the environment is correct. The process speaks the MCP stdio transport and waits for a client to connect.
 
@@ -104,13 +104,13 @@ Resolution order, from highest to lowest priority:
 
 Pass `model` explicitly when you want a specific model for that call. The defaults stay untouched.
 
-```
+```text
 Tool: gemini_generate
   prompt: "Explain CAP theorem in two paragraphs."
   model: "gemini-3.1-pro-preview"
 ```
 
-```
+```text
 Tool: gemini_generate_image
   prompt: "Product photo of a wireless headset on a studio backdrop"
   model: "gemini-3-pro-image-preview"
@@ -118,7 +118,7 @@ Tool: gemini_generate_image
 
 Call `gemini_list_models` to see every model your API key can access:
 
-```
+```text
 Tool: gemini_list_models
 ```
 
@@ -156,7 +156,7 @@ Explicit `model` arguments on individual tool calls still win over the env var.
 
 Ask Gemini to read a local PDF and summarize it:
 
-```
+```text
 Tool: gemini_analyze_file
   file_path: "/home/user/docs/report.pdf"
   prompt: "Summarize the key findings in three bullet points."
@@ -179,7 +179,7 @@ Files uploaded via the Files API expire automatically on Google's servers after 
 
 Generate three product image variations from a prompt:
 
-```
+```text
 Tool: gemini_generate_image
   prompt: "A minimalist product shot of a ceramic coffee mug on a white surface, soft natural light"
   output_dir: "/tmp/gemini-images"
@@ -203,7 +203,7 @@ Example response:
 
 Ask a question that benefits from up-to-date web data:
 
-```
+```text
 Tool: gemini_search_grounded
   prompt: "What is the latest stable release of Python?"
 ```
@@ -225,7 +225,7 @@ Example response:
 
 Call `gemini_list_models` to retrieve the full list of models your API key can access, along with supported actions and token limits:
 
-```
+```text
 Tool: gemini_list_models
 ```
 
@@ -249,15 +249,15 @@ Tests are fully offline: `google.genai` is mocked at the client boundary so no A
 uv run pytest
 ```
 
-All 28 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
+All 31 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
 
 ## Project structure
 
-```
+```text
 gemini-mcp/
 ├── server.py          # All MCP tool definitions and the `main()` entry point
 ├── pyproject.toml     # Project metadata, dependencies, and `gemini-mcp` script
-├── tests/             # 28 unit tests (offline, mocked)
+├── tests/             # 31 unit tests (offline, mocked)
 └── docs/
     └── superpowers/
         ├── specs/     # Design specification
