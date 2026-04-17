@@ -1,25 +1,193 @@
 # gemini-mcp
 
-MCP server exposing Google Gemini capabilities (text, image, code execution, search grounding, file analysis, chat) to Claude Code via Google AI Studio.
+An MCP server that exposes Google Gemini capabilities to Claude Code and other MCP clients via the Google AI Studio API.
 
-## Setup
+![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)
+![License](https://img.shields.io/badge/license-MIT-green)
 
-1. Get a key at https://ai.google.dev
-2. Register with Claude Code:
+## Overview
+
+`gemini-mcp` wraps the Google AI Studio API as a set of MCP tools, making Gemini models directly callable from within Claude Code (or any MCP-compatible client). It supports single-turn text generation, image generation, Python code execution in Gemini's sandbox, Google Search-grounded responses, multi-modal file analysis, and persistent multi-turn chat sessions. No Vertex AI account or Anthropic API key is required.
+
+## Features
+
+| Tool | Default model | Purpose |
+|---|---|---|
+| `gemini_list_models` | n/a | Lists available Gemini models with capabilities and token limits |
+| `gemini_generate` | `gemini-2.5-pro` | Single-turn text generation with optional system prompt and sampling controls |
+| `gemini_generate_image` | `gemini-2.5-flash-image` | Native image generation; writes PNG files to a local output directory |
+| `gemini_code_execute` | `gemini-2.5-pro` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
+| `gemini_search_grounded` | `gemini-2.5-flash` | Text generation grounded with Google Search; returns answer and citations |
+| `gemini_analyze_file` | `gemini-2.5-pro` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
+| `gemini_chat` | `gemini-2.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
+
+Every tool accepts a `model` parameter to override the default for that call. Set `GEMINI_DEFAULT_MODEL` to override every tool's default globally.
+
+## Requirements
+
+- Python 3.11 or later
+- [`uv`](https://docs.astral.sh/uv/) for dependency management
+- A Google AI Studio API key from https://aistudio.google.com/app/apikey
+
+## Installation
+
+### With Claude Code (recommended)
+
+Register the server as a user-scoped MCP server. Replace `/path/to/gemini-mcp` with the absolute path where you cloned this repository and `<your-key>` with your Google AI Studio API key.
 
 ```bash
 claude mcp add gemini -s user \
   -e GEMINI_API_KEY=<your-key> \
-  -- uvx --from "fastmcp[cli]" fastmcp run ~/workspace/gemini-mcp/server.py
+  -- uv --directory /path/to/gemini-mcp run python server.py
 ```
+
+This uses `uv run` so dependencies are resolved automatically from `pyproject.toml`. No separate install step is needed.
+
+### Manual / standalone
+
+Useful for testing outside of Claude Code:
+
+```bash
+git clone https://github.com/azmym/gemini-mcp
+cd gemini-mcp
+uv sync
+GEMINI_API_KEY=<your-key> uv run python server.py
+```
+
+The server speaks the MCP stdio transport and will wait for client connections.
 
 ## Configuration
 
-| Env var | Required | Purpose |
+| Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Google AI Studio API key |
-| `GEMINI_DEFAULT_MODEL` | No | Overrides every tool's default model |
+| `GEMINI_API_KEY` | Yes | Google AI Studio API key (https://aistudio.google.com/app/apikey) |
+| `GEMINI_DEFAULT_MODEL` | No | Overrides the default model for every tool globally |
 
-## Tools
+## Usage examples
 
-See `docs/superpowers/specs/2026-04-17-gemini-mcp-design.md` for the full tool reference.
+### Analyze a PDF
+
+Ask Gemini to read a local PDF and summarize it:
+
+```
+Tool: gemini_analyze_file
+  file_path: "/home/user/docs/report.pdf"
+  prompt: "Summarize the key findings in three bullet points."
+  model: "gemini-2.5-pro"
+```
+
+Example response:
+
+```json
+{
+  "answer": "1. Revenue grew 18% year-on-year...\n2. Operational costs declined...\n3. Outlook for next quarter...",
+  "file_uri": "files/abc123",
+  "model": "gemini-2.5-pro"
+}
+```
+
+Files uploaded via the Files API expire automatically on Google's servers after 48 hours.
+
+### Generate image variations
+
+Generate three product image variations from a prompt:
+
+```
+Tool: gemini_generate_image
+  prompt: "A minimalist product shot of a ceramic coffee mug on a white surface, soft natural light"
+  output_dir: "/tmp/gemini-images"
+  count: 3
+```
+
+Example response:
+
+```json
+{
+  "paths": [
+    "/tmp/gemini-images/gemini-1713380000-a1b2c3d4.png",
+    "/tmp/gemini-images/gemini-1713380000-e5f6a7b8.png",
+    "/tmp/gemini-images/gemini-1713380000-c9d0e1f2.png"
+  ],
+  "model": "gemini-2.5-flash-image"
+}
+```
+
+### Search-grounded query with citations
+
+Ask a question that benefits from up-to-date web data:
+
+```
+Tool: gemini_search_grounded
+  prompt: "What is the latest stable release of Python?"
+```
+
+Example response:
+
+```json
+{
+  "answer": "As of April 2025, the latest stable Python release is 3.13.3...",
+  "citations": [
+    {"url": "https://www.python.org/downloads/", "title": "Download Python"},
+    {"url": "https://docs.python.org/3/whatsnew/3.13.html", "title": "What's New in Python 3.13"}
+  ],
+  "model": "gemini-2.5-flash"
+}
+```
+
+## Available Gemini models
+
+Call `gemini_list_models` to retrieve the full list of models your API key can access, along with supported actions and token limits:
+
+```
+Tool: gemini_list_models
+```
+
+The server can use any model string accepted by the Google AI Studio API. At the time of writing, this includes Gemini 3 preview models (such as `gemini-3.1-pro-preview`), Imagen 4 for image generation, and Veo 3 for video generation. Pass the model name explicitly in any tool call to use a non-default model.
+
+## Development
+
+### Setup
+
+```bash
+git clone https://github.com/azmym/gemini-mcp
+cd gemini-mcp
+uv sync --extra dev
+```
+
+### Running tests
+
+Tests are fully offline: `google.genai` is mocked at the client boundary so no API key is needed.
+
+```bash
+uv run pytest
+```
+
+All 28 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
+
+## Project structure
+
+```
+gemini-mcp/
+├── server.py          # All MCP tool definitions (~280 lines)
+├── pyproject.toml     # Project metadata and dependencies
+├── tests/             # 28 unit tests (offline, mocked)
+└── docs/
+    └── superpowers/
+        ├── specs/     # Design specification
+        └── plans/     # Implementation plan
+```
+
+## Known limitations
+
+- **Chat session state is in-memory.** All `gemini_chat` sessions are lost when the server process restarts. There is no persistence layer.
+- **`gemini_list_models` has no `model` parameter.** On API error it returns `{"error": "...", "model": "n/a"}` rather than a model name, because no model is involved in the call.
+- **Tests require `FASTMCP_DECORATOR_MODE=object`.** This environment variable (set in `tests/conftest.py`) enables a FastMCP v2 compatibility mode (deprecated in FastMCP 3.x) that allows tests to access `.fn` on decorated tool functions. This is a test-only concern and does not affect production behavior.
+- **Google AI Studio only.** This server does not support Vertex AI. The `GEMINI_API_KEY` must be a Google AI Studio key.
+
+## Contributing
+
+Issues and pull requests are welcome. If you find a bug or want to propose a new tool, open an issue first to discuss the approach. For code changes, fork the repository, create a feature branch, and open a PR against `main`. Please include or update tests as appropriate.
+
+## License
+
+MIT. See the LICENSE file for details.
