@@ -249,6 +249,35 @@ def gemini_analyze_file(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_chat(
+    session_id: str,
+    message: str,
+    system_instruction: str | None = None,
+    model: str = "gemini-2.5-flash",
+) -> dict[str, Any]:
+    """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
+    chosen = _resolve_model(model)
+    try:
+        client = _ensure_client()
+        session = _sessions.get(session_id)
+        if session is None:
+            config = genai_types.GenerateContentConfig(system_instruction=system_instruction)
+            chat = client.chats.create(model=chosen, config=config)
+            session = {"chat": chat, "turn": 0}
+            _sessions[session_id] = session
+
+        session["turn"] += 1
+        response = session["chat"].send_message(message)
+        return {
+            "response": (response.text or "").strip(),
+            "turn": session["turn"],
+            "model": chosen,
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
 if __name__ == "__main__":
     _ensure_client()
     mcp.run()
