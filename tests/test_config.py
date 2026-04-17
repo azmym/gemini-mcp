@@ -14,17 +14,30 @@ def test_server_raises_when_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> 
         server._build_client()
 
 
-def test_default_model_env_overrides_all_tools(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "gemini-3-flash-preview")
+def test_resolve_uses_explicit_model_when_provided(monkeypatch: pytest.MonkeyPatch) -> None:
+    """An explicit per-call model wins over every other source."""
+    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "env-model")
     import server
     importlib.reload(server)
 
-    assert server._resolve_model("gemini-2.5-flash") == "gemini-3-flash-preview"
+    assert server._resolve_model("caller-explicit", "builtin") == "caller-explicit"
 
 
-def test_default_model_env_absent_returns_caller_default(monkeypatch: pytest.MonkeyPatch) -> None:
+def test_resolve_uses_env_var_when_no_explicit_model(monkeypatch: pytest.MonkeyPatch) -> None:
+    """When the caller passes None, the env var overrides the built-in default."""
+    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "env-model")
+    import server
+    importlib.reload(server)
+
+    assert server._resolve_model(None, "builtin") == "env-model"
+
+
+def test_resolve_falls_back_to_builtin_when_nothing_else_set(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """When nothing is set, the built-in default is used."""
     monkeypatch.delenv("GEMINI_DEFAULT_MODEL", raising=False)
     import server
     importlib.reload(server)
 
-    assert server._resolve_model("gemini-2.5-flash") == "gemini-2.5-flash"
+    assert server._resolve_model(None, "builtin") == "builtin"

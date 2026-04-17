@@ -31,9 +31,17 @@ def _build_client() -> genai.Client:
     return genai.Client(api_key=api_key)
 
 
-def _resolve_model(default: str) -> str:
-    """Return the caller's default unless GEMINI_DEFAULT_MODEL overrides globally."""
-    return os.environ.get("GEMINI_DEFAULT_MODEL") or default
+def _resolve_model(explicit: str | None, builtin: str) -> str:
+    """Resolve the model to use for a tool call.
+
+    Priority (highest first):
+    1. Explicit per-call argument (caller passed `model=...`)
+    2. GEMINI_DEFAULT_MODEL environment variable
+    3. Built-in default for the tool
+    """
+    if explicit:
+        return explicit
+    return os.environ.get("GEMINI_DEFAULT_MODEL") or builtin
 
 
 def _ensure_client() -> genai.Client:
@@ -71,10 +79,10 @@ def gemini_generate(
     system_instruction: str | None = None,
     temperature: float = 0.7,
     max_output_tokens: int | None = None,
-    model: str = "gemini-2.5-pro",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Single-turn text generation with optional system prompt and sampling controls."""
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-pro")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -98,13 +106,13 @@ def gemini_generate_image(
     prompt: str,
     output_dir: str = "/tmp/gemini-images",
     count: int = 1,
-    model: str = "gemini-2.5-flash-image",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Generate images from a text prompt using a Gemini native image model.
 
     Writes PNG files to `output_dir` and returns their absolute paths.
     """
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-flash-image")
     try:
         client = _ensure_client()
         out_path = Path(output_dir).expanduser().resolve()
@@ -140,13 +148,13 @@ def gemini_generate_image(
 @mcp.tool()
 def gemini_code_execute(
     prompt: str,
-    model: str = "gemini-2.5-pro",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Ask Gemini to write and run Python code in its sandbox.
 
     Returns the final answer plus the code and stdout.
     """
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-pro")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -183,10 +191,10 @@ def gemini_code_execute(
 @mcp.tool()
 def gemini_search_grounded(
     prompt: str,
-    model: str = "gemini-2.5-flash",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Text generation grounded with Google Search. Returns answer and citations."""
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-flash")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -225,10 +233,10 @@ def gemini_search_grounded(
 def gemini_analyze_file(
     file_path: str,
     prompt: str,
-    model: str = "gemini-2.5-pro",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Upload a local file (PDF, image, audio, video) and ask Gemini about it."""
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-pro")
     path = Path(file_path).expanduser().resolve()
     if not path.is_file():
         return {"error": f"File not found: {file_path}", "model": chosen}
@@ -254,10 +262,10 @@ def gemini_chat(
     session_id: str,
     message: str,
     system_instruction: str | None = None,
-    model: str = "gemini-2.5-flash",
+    model: str | None = None,
 ) -> dict[str, Any]:
     """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
-    chosen = _resolve_model(model)
+    chosen = _resolve_model(model, "gemini-2.5-flash")
     try:
         client = _ensure_client()
         session = _sessions.get(session_id)

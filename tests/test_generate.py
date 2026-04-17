@@ -36,6 +36,34 @@ def test_generate_respects_model_parameter(mock_genai_client: MagicMock) -> None
     assert result["model"] == "gemini-2.5-flash"
 
 
+def test_generate_explicit_model_overrides_env_var(
+    mock_genai_client: MagicMock, monkeypatch
+) -> None:
+    """Per-call model wins over GEMINI_DEFAULT_MODEL."""
+    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "env-chosen-model")
+    mock_genai_client.models.generate_content.return_value = _fake_response("ok")
+
+    import server
+
+    result = server.gemini_generate.fn(prompt="hi", model="caller-chosen-model")
+
+    assert result["model"] == "caller-chosen-model"
+
+
+def test_generate_env_var_used_when_no_model_arg(
+    mock_genai_client: MagicMock, monkeypatch
+) -> None:
+    """With no per-call model, GEMINI_DEFAULT_MODEL overrides the built-in default."""
+    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "env-chosen-model")
+    mock_genai_client.models.generate_content.return_value = _fake_response("ok")
+
+    import server
+
+    result = server.gemini_generate.fn(prompt="hi")
+
+    assert result["model"] == "env-chosen-model"
+
+
 def test_generate_passes_system_instruction_and_temperature(mock_genai_client: MagicMock) -> None:
     mock_genai_client.models.generate_content.return_value = _fake_response("ok")
 
