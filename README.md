@@ -370,6 +370,13 @@ The `gemini-mcp` console script is registered under `[project.scripts]` in `pypr
 
 Issues and pull requests are welcome. If you find a bug or want to propose a new tool, open an issue first to discuss the approach. For code changes, fork the repository, create a feature branch, and open a PR against `main`. Please include or update tests as appropriate.
 
+## Further reading
+
+- [Installation guide](docs/installation.md) - prerequisites, install options, upgrade, and verification
+- [Configuration](docs/configuration.md) - environment variables and model resolution priority
+- [Tools reference](docs/tools.md) - every MCP tool with parameters and example responses
+- [Models](docs/models.md) - choosing between Gemini, Imagen, and Veo models
+
 ## License
 
 MIT. See the [LICENSE](LICENSE) file for details.
