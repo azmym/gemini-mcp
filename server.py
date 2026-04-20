@@ -384,6 +384,45 @@ def gemini_start_video(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_get_video(
+    operation_id: str,
+    output_dir: str = "/tmp/gemini-videos",
+) -> dict[str, Any]:
+    """Poll a Veo operation started by gemini_start_video.
+
+    Returns status "running", "done" (with path), "error", or "unknown".
+    """
+    op = _video_ops.get(operation_id)
+    if op is None:
+        return {"status": "unknown", "error": "operation_id not found"}
+
+    try:
+        client = _ensure_client()
+        op = client.operations.get(op)
+        _video_ops[operation_id] = op
+    except Exception as exc:  # noqa: BLE001
+        _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+    if not getattr(op, "done", False):
+        return {"status": "running", "operation_id": operation_id}
+
+    try:
+        videos = op.result.generated_videos
+        video_bytes = videos[0].video.video_bytes
+        out = Path(output_dir).expanduser().resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        fname = f"veo-{int(time.time())}-{uuid.uuid4().hex[:8]}.mp4"
+        fpath = out / fname
+        fpath.write_bytes(video_bytes)
+        _video_ops.pop(operation_id, None)
+        return {"status": "done", "path": str(fpath), "operation_id": operation_id}
+    except Exception as exc:  # noqa: BLE001
+        _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+
 def main() -> None:
     """CLI entry point. Registered in pyproject.toml as `gemini-mcp`."""
     _ensure_client()
