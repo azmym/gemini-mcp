@@ -7,7 +7,7 @@ An MCP server that exposes Google Gemini capabilities to Claude Code and other M
 
 ## Overview
 
-`gemini-mcp` wraps the Google AI Studio API as a set of MCP tools, making Gemini models directly callable from within Claude Code (or any MCP-compatible client). It supports single-turn text generation, image generation, Python code execution in Gemini's sandbox, Google Search-grounded responses, multi-modal file analysis, and persistent multi-turn chat sessions. No Vertex AI account or Anthropic API key is required.
+`gemini-mcp` wraps the Google AI Studio API as a set of MCP tools, making Gemini, Imagen, and Veo models directly callable from within Claude Code (or any MCP-compatible client). It supports single-turn text generation, native Gemini image generation, Imagen 4 image generation, asynchronous Veo video generation, Python code execution in Gemini's sandbox, Google Search-grounded responses, multi-modal file analysis, and persistent multi-turn chat sessions. No Vertex AI account or Anthropic API key is required.
 
 ## Features
 
@@ -133,8 +133,10 @@ Tool: gemini_list_models
 | Strongest stable reasoning, code, analysis | `gemini-2.5-pro` |
 | Latest preview, advanced reasoning | `gemini-3.1-pro-preview` |
 | Fast preview variant | `gemini-3-flash-preview` |
-| Stable image generation | `gemini-2.5-flash-image` |
-| Preview image generation | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
+| Stable native image generation | `gemini-2.5-flash-image` |
+| Preview native image generation | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
+| High-quality Imagen image generation | `imagen-4.0-generate-001` (standard), `imagen-4.0-ultra-generate-001` (highest fidelity), `imagen-4.0-fast-generate-001` (quickest) |
+| Video generation (Veo 3) | `veo-3.0-generate-001` (stable), `veo-3.0-fast-generate-001` (faster), `veo-3.1-generate-preview` (latest) |
 | Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
 
 Preview models can change behavior or availability without notice. Stick to the stable models for workflows you rely on; use previews for experimentation.
