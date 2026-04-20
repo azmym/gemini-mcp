@@ -86,7 +86,7 @@ gemini_generate_image(
 ) -> dict
 ```
 
-Native Gemini image generation. Writes PNG files to `output_dir` and returns absolute paths.
+Native Gemini image generation. Writes PNG files to `output_dir` and returns absolute paths. Powered by Gemini's Nano Banana models. Pass `model="gemini-3-pro-image-preview"` for Nano Banana Pro.
 
 **Parameters:**
 

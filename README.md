@@ -52,7 +52,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 |---|---|---|
 | `gemini_list_models` | n/a | Lists available Gemini models with capabilities and token limits |
 | `gemini_generate` | `gemini-2.5-pro` | Single-turn text generation with optional system prompt and sampling controls |
-| `gemini_generate_image` | `gemini-2.5-flash-image` | Native image generation; writes PNG files to a local output directory |
+| `gemini_generate_image` | `gemini-2.5-flash-image` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
 | `gemini_code_execute` | `gemini-2.5-pro` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
 | `gemini_search_grounded` | `gemini-2.5-flash` | Text generation grounded with Google Search; returns answer and citations |
 | `gemini_analyze_file` | `gemini-2.5-pro` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
@@ -176,8 +176,8 @@ Tool: gemini_list_models
 | Strongest stable reasoning, code, analysis | `gemini-2.5-pro` |
 | Latest preview, advanced reasoning | `gemini-3.1-pro-preview` |
 | Fast preview variant | `gemini-3-flash-preview` |
-| Stable native image generation | `gemini-2.5-flash-image` |
-| Preview native image generation | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
+| Stable native image generation (Nano Banana) | `gemini-2.5-flash-image` |
+| Preview native image generation (Nano Banana Pro / Nano Banana 2) | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
 | High-quality Imagen image generation | `imagen-4.0-generate-001` (standard), `imagen-4.0-ultra-generate-001` (highest fidelity), `imagen-4.0-fast-generate-001` (quickest) |
 | Video generation (Veo 3) | `veo-3.0-generate-001` (stable), `veo-3.0-fast-generate-001` (faster), `veo-3.1-generate-preview` (latest) |
 | Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |

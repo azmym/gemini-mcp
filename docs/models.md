@@ -26,6 +26,18 @@ The response lists every model your API key can access, along with supported act
 | Video generation (Veo 3) | `veo-3.0-generate-001` (stable), `veo-3.0-fast-generate-001` (faster), `veo-3.1-generate-preview` (latest) |
 | Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
 
+## Nano Banana
+
+"Nano Banana" is Google's codename for Gemini's native image generation models. `gemini_generate_image` calls these models, so you already have access:
+
+| Model ID | Alias | Status |
+|---|---|---|
+| `gemini-2.5-flash-image` | Nano Banana | Stable (default) |
+| `gemini-3.1-flash-image-preview` | Nano Banana 2 | Preview |
+| `gemini-3-pro-image-preview` | Nano Banana Pro | Preview |
+
+All three are text-to-image. Nano Banana also supports reference-image editing (up to 14 input images per prompt) but this server does not expose that surface today; `gemini_generate_image` is text-only.
+
 ## Stable vs preview
 
 - **Stable** models (`gemini-2.5-*`, `imagen-4.0-generate-001`, `veo-3.0-generate-001`) have fixed behavior and long-term availability guarantees.
