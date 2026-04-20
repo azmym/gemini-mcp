@@ -18,6 +18,7 @@ from google.genai import types as genai_types
 mcp = FastMCP("gemini")
 
 _sessions: dict[str, Any] = {}
+_video_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
 
 
