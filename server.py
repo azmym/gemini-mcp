@@ -335,6 +335,55 @@ def gemini_chat(
         return {"error": str(exc), "model": chosen}
 
 
+@mcp.tool()
+def gemini_start_video(
+    prompt: str,
+    aspect_ratio: str = "16:9",
+    duration_seconds: int = 5,
+    image_path: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Start a Veo video generation. Returns an operation_id to poll with gemini_get_video.
+
+    Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.
+    When image_path is set, runs image-to-video mode.
+    """
+    chosen = _resolve_model(model, "veo-3.0-generate-001")
+    image = None
+    if image_path:
+        p = Path(image_path).expanduser().resolve()
+        if not p.is_file():
+            return {"error": f"File not found: {image_path}", "model": chosen}
+        mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+        try:
+            image = genai_types.Image(image_bytes=p.read_bytes(), mime_type=mime)
+        except Exception as exc:  # noqa: BLE001
+            return {"error": f"Failed to read image: {exc}", "model": chosen}
+
+    try:
+        client = _ensure_client()
+        config = genai_types.GenerateVideosConfig(
+            number_of_videos=1,
+            duration_seconds=duration_seconds,
+            aspect_ratio=aspect_ratio,
+        )
+        operation = client.models.generate_videos(
+            model=chosen,
+            prompt=prompt,
+            config=config,
+            image=image,
+        )
+        op_id = uuid.uuid4().hex[:12]
+        _video_ops[op_id] = operation
+        return {
+            "operation_id": op_id,
+            "model": chosen,
+            "message": "Video generation started. Poll with gemini_get_video.",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
 def main() -> None:
     """CLI entry point. Registered in pyproject.toml as `gemini-mcp`."""
     _ensure_client()
