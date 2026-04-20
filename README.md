@@ -1,9 +1,46 @@
+<div align="center">
+
 # gemini-mcp
 
-An MCP server that exposes Google Gemini capabilities to Claude Code and other MCP clients via the Google AI Studio API.
+**Google Gemini, Imagen, and Veo, wired directly into Claude Code via MCP.**
 
-![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)
-![License](https://img.shields.io/badge/license-MIT-green)
+[![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
+[![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
+[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen)](tests/)
+[![MCP](https://img.shields.io/badge/MCP-FastMCP%203.x-purple)](https://gofastmcp.com/)
+[![Google AI Studio](https://img.shields.io/badge/backend-Google%20AI%20Studio-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
+
+10 MCP tools. Text, images, video, code execution, multi-modal file analysis, and search-grounded answers, all from one API key.
+
+[Quickstart](#quickstart) · [Features](#features) · [Model selection](#model-selection) · [Examples](#usage-examples) · [Limits](#known-limitations)
+
+</div>
+
+---
+
+## Quickstart
+
+One command to install with [`uvx`](https://docs.astral.sh/uv/) and register with Claude Code:
+
+```bash
+claude mcp add gemini -s user -e GEMINI_API_KEY=<your-key> -- uvx --from git+https://github.com/azmym/gemini-mcp gemini-mcp
+```
+
+Get your API key at [aistudio.google.com/app/apikey](https://aistudio.google.com/app/apikey). Then verify:
+
+```bash
+claude mcp list
+# Expected: gemini: ... - ✓ Connected
+```
+
+That's it. Ask Claude Code to "list available Gemini models" and you're off.
+
+## Why use this?
+
+- **One MCP server, three Google model families.** Gemini 2.5/3 for text and multi-modal, Imagen 4 for high-quality images, Veo 3 for video, all behind a single API key.
+- **Google AI Studio only.** No Vertex AI account, no service accounts, no GCP project setup. One key and you're done.
+- **Async video built in.** Veo generations run as long-running operations so the stdio server never blocks for minutes.
+- **Model swapping per call.** Every tool accepts a `model` argument, so you can mix `gemini-2.5-flash` for quick answers with `gemini-3.1-pro-preview` for heavy reasoning in the same session.
 
 ## Overview
 
@@ -54,7 +91,8 @@ uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
 
 You can also pin to a specific tag or commit by appending `@<ref>`, for example `git+https://github.com/azmym/gemini-mcp@v0.1.0`.
 
-### Option B: run from a local clone (best for development)
+<details>
+<summary><b>Option B: run from a local clone (best for development)</b></summary>
 
 Use this when you want to edit the code and iterate quickly. Replace `/path/to/gemini-mcp` with the absolute path where you cloned the repository.
 
@@ -70,7 +108,10 @@ claude mcp add gemini -s user \
 
 Changes to `server.py` take effect the next time Claude Code restarts the MCP server.
 
-### Option C: standalone manual run (testing without Claude Code)
+</details>
+
+<details>
+<summary><b>Option C: standalone manual run (testing without Claude Code)</b></summary>
 
 Launch the server directly to verify the environment is correct. The process speaks the MCP stdio transport and waits for a client to connect.
 
@@ -85,6 +126,8 @@ After registering with Option A or B, verify the connection:
 claude mcp list
 # Expected: gemini: ... - ✓ Connected
 ```
+
+</details>
 
 ## Configuration
 
@@ -311,7 +354,8 @@ gemini-mcp/
 
 The `gemini-mcp` console script is registered under `[project.scripts]` in `pyproject.toml` and points to `server:main`. This is what makes Option A above work: `uvx` installs the package, exposes the `gemini-mcp` command, and runs it.
 
-## Known limitations
+<details>
+<summary><b>Known limitations</b></summary>
 
 - **Chat session state is in-memory.** All `gemini_chat` sessions are lost when the server process restarts. There is no persistence layer.
 - **`gemini_list_models` has no `model` parameter.** On API error it returns `{"error": "...", "model": "n/a"}` rather than a model name, because no model is involved in the call.
@@ -320,10 +364,12 @@ The `gemini-mcp` console script is registered under `[project.scripts]` in `pypr
 - **Video operation state is in-memory.** `operation_id` values returned by `gemini_start_video` are invalidated when the server process restarts. Poll within a single server lifetime.
 - **Image-to-video requires local files.** `gemini_start_video`'s `image_path` must point to a file readable by the server process.
 
+</details>
+
 ## Contributing
 
 Issues and pull requests are welcome. If you find a bug or want to propose a new tool, open an issue first to discuss the approach. For code changes, fork the repository, create a feature branch, and open a PR against `main`. Please include or update tests as appropriate.
 
 ## License
 
-MIT. See the LICENSE file for details.
+MIT. See the [LICENSE](LICENSE) file for details.
