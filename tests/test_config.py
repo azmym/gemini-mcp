@@ -41,3 +41,11 @@ def test_resolve_falls_back_to_builtin_when_nothing_else_set(
     importlib.reload(server)
 
     assert server._resolve_model(None, "builtin") == "builtin"
+
+
+def test_video_ops_dict_exists() -> None:
+    """The module-level _video_ops dict must exist for video operation tracking."""
+    import server
+
+    assert hasattr(server, "_video_ops")
+    assert isinstance(server._video_ops, dict)

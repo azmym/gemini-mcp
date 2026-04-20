@@ -18,6 +18,7 @@ from google.genai import types as genai_types
 mcp = FastMCP("gemini")
 
 _sessions: dict[str, Any] = {}
+_video_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
 
 
@@ -139,6 +140,54 @@ def gemini_generate_image(
                 fpath = out_path / fname
                 fpath.write_bytes(inline.data)
                 paths.append(str(fpath))
+
+        return {"paths": paths, "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_generate_image_imagen(
+    prompt: str,
+    output_dir: str = "/tmp/gemini-images",
+    count: int = 1,
+    aspect_ratio: str = "1:1",
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generate images with Imagen 4 (text-to-image, PNG output).
+
+    Uses `client.models.generate_images()`. Supported aspect ratios:
+    "1:1", "16:9", "9:16", "4:3", "3:4". Count must be 1 to 4.
+    """
+    chosen = _resolve_model(model, "imagen-4.0-generate-001")
+    if count < 1 or count > 4:
+        return {"error": "count must be between 1 and 4", "model": chosen}
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        config = genai_types.GenerateImagesConfig(
+            number_of_images=count,
+            aspect_ratio=aspect_ratio,
+            output_mime_type="image/png",
+        )
+        response = client.models.generate_images(
+            model=chosen,
+            prompt=prompt,
+            config=config,
+        )
+
+        paths: list[str] = []
+        stamp = int(time.time())
+        for generated in response.generated_images or []:
+            data = getattr(getattr(generated, "image", None), "image_bytes", None)
+            if not data:
+                continue
+            fname = f"imagen-{stamp}-{uuid.uuid4().hex[:8]}.png"
+            fpath = out_path / fname
+            fpath.write_bytes(data)
+            paths.append(str(fpath))
 
         return {"paths": paths, "model": chosen}
     except Exception as exc:  # noqa: BLE001
@@ -284,6 +333,94 @@ def gemini_chat(
         }
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_start_video(
+    prompt: str,
+    aspect_ratio: str = "16:9",
+    duration_seconds: int = 5,
+    image_path: str | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Start a Veo video generation. Returns an operation_id to poll with gemini_get_video.
+
+    Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.
+    When image_path is set, runs image-to-video mode.
+    """
+    chosen = _resolve_model(model, "veo-3.0-generate-001")
+    image = None
+    if image_path:
+        p = Path(image_path).expanduser().resolve()
+        if not p.is_file():
+            return {"error": f"File not found: {image_path}", "model": chosen}
+        mime = "image/png" if p.suffix.lower() == ".png" else "image/jpeg"
+        try:
+            image = genai_types.Image(image_bytes=p.read_bytes(), mime_type=mime)
+        except Exception as exc:  # noqa: BLE001
+            return {"error": f"Failed to read image: {exc}", "model": chosen}
+
+    try:
+        client = _ensure_client()
+        config = genai_types.GenerateVideosConfig(
+            number_of_videos=1,
+            duration_seconds=duration_seconds,
+            aspect_ratio=aspect_ratio,
+        )
+        operation = client.models.generate_videos(
+            model=chosen,
+            prompt=prompt,
+            config=config,
+            image=image,
+        )
+        op_id = uuid.uuid4().hex[:12]
+        _video_ops[op_id] = operation
+        return {
+            "operation_id": op_id,
+            "model": chosen,
+            "message": "Video generation started. Poll with gemini_get_video.",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_get_video(
+    operation_id: str,
+    output_dir: str = "/tmp/gemini-videos",
+) -> dict[str, Any]:
+    """Poll a Veo operation started by gemini_start_video.
+
+    Returns status "running", "done" (with path), "error", or "unknown".
+    """
+    op = _video_ops.get(operation_id)
+    if op is None:
+        return {"status": "unknown", "error": "operation_id not found"}
+
+    try:
+        client = _ensure_client()
+        op = client.operations.get(op)
+        _video_ops[operation_id] = op
+    except Exception as exc:  # noqa: BLE001
+        _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+    if not getattr(op, "done", False):
+        return {"status": "running", "operation_id": operation_id}
+
+    try:
+        videos = op.result.generated_videos
+        video_bytes = videos[0].video.video_bytes
+        out = Path(output_dir).expanduser().resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        fname = f"veo-{int(time.time())}-{uuid.uuid4().hex[:8]}.mp4"
+        fpath = out / fname
+        fpath.write_bytes(video_bytes)
+        _video_ops.pop(operation_id, None)
+        return {"status": "done", "path": str(fpath), "operation_id": operation_id}
+    except Exception as exc:  # noqa: BLE001
+        _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
 
 
 def main() -> None:

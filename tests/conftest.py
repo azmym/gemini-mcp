@@ -33,3 +33,11 @@ def reset_chat_sessions(monkeypatch: pytest.MonkeyPatch) -> None:
     import server
 
     monkeypatch.setattr(server, "_sessions", {})
+
+
+@pytest.fixture
+def reset_video_ops(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear the in-memory Veo operations dict between tests."""
+    import server
+
+    monkeypatch.setattr(server, "_video_ops", {})
