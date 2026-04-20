@@ -20,6 +20,9 @@ An MCP server that exposes Google Gemini capabilities to Claude Code and other M
 | `gemini_search_grounded` | `gemini-2.5-flash` | Text generation grounded with Google Search; returns answer and citations |
 | `gemini_analyze_file` | `gemini-2.5-pro` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
 | `gemini_chat` | `gemini-2.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
+| `gemini_generate_image_imagen` | `imagen-4.0-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
+| `gemini_start_video` | `veo-3.0-generate-001` | Kicks off a Veo video generation; returns an `operation_id` for polling |
+| `gemini_get_video` | n/a | Polls a Veo operation started by `gemini_start_video`; writes the MP4 when done |
 
 Every tool accepts a `model` parameter to override the default for that call. Set `GEMINI_DEFAULT_MODEL` to override every tool's default globally.
 
@@ -221,6 +224,46 @@ Example response:
 }
 ```
 
+### Asynchronous video generation
+
+Video generation takes 30 seconds to a few minutes. The server exposes a start-then-poll pattern so Claude can work on other tasks while waiting.
+
+Step 1: start the operation.
+
+```text
+Tool: gemini_start_video
+  prompt: "A calm drone shot of waves meeting a sandy beach at sunset"
+  aspect_ratio: "16:9"
+  duration_seconds: 5
+```
+
+Response:
+
+```json
+{"operation_id": "a1b2c3d4e5f6", "model": "veo-3.0-generate-001", "message": "Video generation started. Poll with gemini_get_video."}
+```
+
+Step 2: poll until the status is `done`.
+
+```text
+Tool: gemini_get_video
+  operation_id: "a1b2c3d4e5f6"
+```
+
+While running:
+
+```json
+{"status": "running", "operation_id": "a1b2c3d4e5f6"}
+```
+
+When complete:
+
+```json
+{"status": "done", "path": "/tmp/gemini-videos/veo-1776443060-ab12cd34.mp4", "operation_id": "a1b2c3d4e5f6"}
+```
+
+Poll every 10 to 15 seconds. Operation state is held in memory, so restarting the server invalidates any in-flight `operation_id` values.
+
 ## Available Gemini models
 
 Call `gemini_list_models` to retrieve the full list of models your API key can access, along with supported actions and token limits:
@@ -249,7 +292,7 @@ Tests are fully offline: `google.genai` is mocked at the client boundary so no A
 uv run pytest
 ```
 
-All 31 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
+All 48 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
 
 ## Project structure
 
@@ -257,7 +300,7 @@ All 31 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=objec
 gemini-mcp/
 ├── server.py          # All MCP tool definitions and the `main()` entry point
 ├── pyproject.toml     # Project metadata, dependencies, and `gemini-mcp` script
-├── tests/             # 31 unit tests (offline, mocked)
+├── tests/             # 48 unit tests (offline, mocked)
 └── docs/
     └── superpowers/
         ├── specs/     # Design specification
@@ -272,6 +315,8 @@ The `gemini-mcp` console script is registered under `[project.scripts]` in `pypr
 - **`gemini_list_models` has no `model` parameter.** On API error it returns `{"error": "...", "model": "n/a"}` rather than a model name, because no model is involved in the call.
 - **Tests require `FASTMCP_DECORATOR_MODE=object`.** This environment variable (set in `tests/conftest.py`) enables a FastMCP v2 compatibility mode (deprecated in FastMCP 3.x) that allows tests to access `.fn` on decorated tool functions. This is a test-only concern and does not affect production behavior.
 - **Google AI Studio only.** This server does not support Vertex AI. The `GEMINI_API_KEY` must be a Google AI Studio key.
+- **Video operation state is in-memory.** `operation_id` values returned by `gemini_start_video` are invalidated when the server process restarts. Poll within a single server lifetime.
+- **Image-to-video requires local files.** `gemini_start_video`'s `image_path` must point to a file readable by the server process.
 
 ## Contributing
 
