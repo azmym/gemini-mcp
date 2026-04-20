@@ -147,6 +147,54 @@ def gemini_generate_image(
 
 
 @mcp.tool()
+def gemini_generate_image_imagen(
+    prompt: str,
+    output_dir: str = "/tmp/gemini-images",
+    count: int = 1,
+    aspect_ratio: str = "1:1",
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generate images with Imagen 4 (text-to-image, PNG output).
+
+    Uses `client.models.generate_images()`. Supported aspect ratios:
+    "1:1", "16:9", "9:16", "4:3", "3:4". Count must be 1 to 4.
+    """
+    chosen = _resolve_model(model, "imagen-4.0-generate-001")
+    if count < 1 or count > 4:
+        return {"error": "count must be between 1 and 4", "model": chosen}
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        config = genai_types.GenerateImagesConfig(
+            number_of_images=count,
+            aspect_ratio=aspect_ratio,
+            output_mime_type="image/png",
+        )
+        response = client.models.generate_images(
+            model=chosen,
+            prompt=prompt,
+            config=config,
+        )
+
+        paths: list[str] = []
+        stamp = int(time.time())
+        for generated in response.generated_images or []:
+            data = getattr(getattr(generated, "image", None), "image_bytes", None)
+            if not data:
+                continue
+            fname = f"imagen-{stamp}-{uuid.uuid4().hex[:8]}.png"
+            fpath = out_path / fname
+            fpath.write_bytes(data)
+            paths.append(str(fpath))
+
+        return {"paths": paths, "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
 def gemini_code_execute(
     prompt: str,
     model: str | None = None,
