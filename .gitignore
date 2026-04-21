@@ -9,3 +9,4 @@ build/
 uv.lock
 /tmp/gemini-images/
 docs/superpowers/
+.DS_Store
