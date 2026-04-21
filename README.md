@@ -1,5 +1,7 @@
 <div align="center">
 
+<img src="assets/social-preview.png" alt="gemini-mcp: Claude Code and Gemini talking via MCP" width="720" />
+
 # gemini-mcp
 
 **Google Gemini, Imagen, and Veo, wired directly into Claude Code via MCP.**
