@@ -44,6 +44,12 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 - **Async video built in.** Veo generations run as long-running operations so the stdio server never blocks for minutes.
 - **Model swapping per call.** Every tool accepts a `model` argument, so you can mix `gemini-2.5-flash` for quick answers with `gemini-3.1-pro-preview` for heavy reasoning in the same session.
 
+## Architecture overview
+
+A 7-minute walkthrough of how Claude Code and Gemini communicate via MCP. Attached as a release asset (released with [v0.1.0](https://github.com/azmym/gemini-mcp/releases/tag/v0.1.0)):
+
+https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architecture.mp4
+
 ## Overview
 
 `gemini-mcp` wraps the Google AI Studio API as a set of MCP tools, making Gemini, Imagen, and Veo models directly callable from within Claude Code (or any MCP-compatible client). It supports single-turn text generation, native Gemini image generation, Imagen 4 image generation, asynchronous Veo video generation, Python code execution in Gemini's sandbox, Google Search-grounded responses, multi-modal file analysis, and persistent multi-turn chat sessions. No Vertex AI account or Anthropic API key is required.
