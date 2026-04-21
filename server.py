@@ -409,8 +409,10 @@ def gemini_get_video(
         return {"status": "running", "operation_id": operation_id}
 
     try:
-        videos = op.result.generated_videos
-        video_bytes = videos[0].video.video_bytes
+        video = op.result.generated_videos[0].video
+        video_bytes = getattr(video, "video_bytes", None)
+        if not video_bytes:
+            video_bytes = client.files.download(file=video)
         out = Path(output_dir).expanduser().resolve()
         out.mkdir(parents=True, exist_ok=True)
         fname = f"veo-{int(time.time())}-{uuid.uuid4().hex[:8]}.mp4"

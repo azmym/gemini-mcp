@@ -8,7 +8,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-48%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)](tests/)
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%203.x-purple)](https://gofastmcp.com/)
 [![Google AI Studio](https://img.shields.io/badge/backend-Google%20AI%20Studio-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
 
@@ -339,7 +339,7 @@ Tests are fully offline: `google.genai` is mocked at the client boundary so no A
 uv run pytest
 ```
 
-All 48 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
+All 49 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=object` via `tests/conftest.py` (see Known limitations below).
 
 ## Project structure
 
@@ -347,7 +347,7 @@ All 48 unit tests should pass. The test suite sets `FASTMCP_DECORATOR_MODE=objec
 gemini-mcp/
 ├── server.py          # All MCP tool definitions and the `main()` entry point
 ├── pyproject.toml     # Project metadata, dependencies, and `gemini-mcp` script
-├── tests/             # 48 unit tests (offline, mocked)
+├── tests/             # 49 unit tests (offline, mocked)
 └── docs/
     └── superpowers/
         ├── specs/     # Design specification
