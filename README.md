@@ -44,6 +44,12 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 - **Async video built in.** Veo generations run as long-running operations so the stdio server never blocks for minutes.
 - **Model swapping per call.** Every tool accepts a `model` argument, so you can mix `gemini-2.5-flash` for quick answers with `gemini-3.1-pro-preview` for heavy reasoning in the same session.
 
+## At a glance
+
+<p align="center">
+  <img src="assets/infographic.png" alt="gemini-mcp infographic: 10 MCP tools across Gemini, Imagen, and Veo model families" width="900" />
+</p>
+
 ## Architecture overview
 
 A 7-minute walkthrough of how Claude Code and Gemini communicate via MCP. Attached as a release asset (released with [v0.1.0](https://github.com/azmym/gemini-mcp/releases/tag/v0.1.0)):
