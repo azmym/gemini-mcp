@@ -23,8 +23,10 @@ The response lists every model your API key can access, along with supported act
 | Stable native image generation | `gemini-2.5-flash-image` |
 | Preview native image generation | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
 | High-quality Imagen image generation | `imagen-4.0-generate-001` (standard), `imagen-4.0-ultra-generate-001` (highest fidelity), `imagen-4.0-fast-generate-001` (quickest) |
-| Video generation (Veo 3) | `veo-3.0-generate-001` (stable), `veo-3.0-fast-generate-001` (faster), `veo-3.1-generate-preview` (latest) |
+| Video generation (Veo) | `veo-3.0-generate-001` (current default, sunset 2026-06-30), `veo-3.0-fast-generate-001` (sunset 2026-06-30), `veo-3.1-generate-preview` (recommended), `veo-3.1-fast-generate-preview` |
 | Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
+
+> **Deprecation notice:** Veo 2 and Veo 3.0 model IDs will be discontinued on **2026-06-30**. Migrate to `veo-3.1-*` before then. See [Migrating to Veo 3.1](migration-veo-3.1.md).
 
 ## Nano Banana
 
@@ -40,7 +42,7 @@ All three are text-to-image. Nano Banana also supports reference-image editing (
 
 ## Stable vs preview
 
-- **Stable** models (`gemini-2.5-*`, `imagen-4.0-generate-001`, `veo-3.0-generate-001`) have fixed behavior and long-term availability guarantees.
+- **Stable** models (`gemini-2.5-*`, `imagen-4.0-generate-001`) have fixed behavior and long-term availability guarantees.
 - **Preview** models (anything with `-preview` in the name) can change behavior, pricing, or availability without notice.
 
 Stick to stable models for workflows you rely on. Use previews for experimentation.

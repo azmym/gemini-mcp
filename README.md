@@ -193,7 +193,7 @@ Tool: gemini_list_models
 | Stable native image generation (Nano Banana) | `gemini-2.5-flash-image` |
 | Preview native image generation (Nano Banana Pro / Nano Banana 2) | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
 | High-quality Imagen image generation | `imagen-4.0-generate-001` (standard), `imagen-4.0-ultra-generate-001` (highest fidelity), `imagen-4.0-fast-generate-001` (quickest) |
-| Video generation (Veo 3) | `veo-3.0-generate-001` (stable), `veo-3.0-fast-generate-001` (faster), `veo-3.1-generate-preview` (latest) |
+| Video generation (Veo) | `veo-3.0-generate-001` (current default, sunset 2026-06-30), `veo-3.0-fast-generate-001` (sunset 2026-06-30), `veo-3.1-generate-preview` (recommended), `veo-3.1-fast-generate-preview` |
 | Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
 
 Preview models can change behavior or availability without notice. Stick to the stable models for workflows you rely on; use previews for experimentation.
@@ -390,6 +390,7 @@ Issues and pull requests are welcome. If you find a bug or want to propose a new
 - [Configuration](docs/configuration.md) - environment variables and model resolution priority
 - [Tools reference](docs/tools.md) - every MCP tool with parameters and example responses
 - [Models](docs/models.md) - choosing between Gemini, Imagen, and Veo models
+- [Migrating to Veo 3.1](docs/migration-veo-3.1.md) - sunset notice for Veo 2 and Veo 3.0 model IDs (2026-06-30)
 
 ## License
 

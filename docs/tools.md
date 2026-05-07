@@ -332,7 +332,9 @@ Kicks off a Veo video generation. Returns an `operation_id` to poll with `gemini
 | `aspect_ratio` | str | `"16:9"` | `"16:9"` or `"9:16"` |
 | `duration_seconds` | int | 5 | Veo 3 accepts roughly 4 to 8 seconds |
 | `image_path` | str\|None | None | If set, image-to-video mode; must be a local file |
-| `model` | str\|None | None | Resolves to `veo-3.0-generate-001` when unset |
+| `model` | str\|None | None | Resolves to `veo-3.0-generate-001` when unset (sunset 2026-06-30, see [migration guide](migration-veo-3.1.md)) |
+
+> **Note:** `veo-3.0-*` and `veo-2.0-*` IDs will return `404 Not Found` after 2026-06-30. Pass `model="veo-3.1-generate-preview"` (or set `GEMINI_DEFAULT_MODEL`) to switch today. See [Migrating to Veo 3.1](migration-veo-3.1.md).
 
 **Success response:**
 
