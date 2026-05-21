@@ -204,7 +204,10 @@ def gemini_generate_music(
     """Generate music from a text prompt with Lyria 3.
 
     Writes a WAV file to `output_dir` and returns its absolute path.
-    `duration_seconds` must be > 0; the model enforces its own upper bound.
+    `duration_seconds` is currently validated client-side (`> 0`) but NOT
+    forwarded to the SDK: `GenerateContentConfig` does not yet accept a
+    duration field for AUDIO modality. Encode duration hints in the prompt
+    until the SDK exposes it.
     """
     chosen = _resolve_model(model, "lyria-3-pro-preview")
     if duration_seconds <= 0:

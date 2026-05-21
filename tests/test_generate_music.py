@@ -100,3 +100,26 @@ def test_generate_music_model_override(
     assert result["model"] == "lyria-3-clip-preview"
     call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
     assert call_kwargs["model"] == "lyria-3-clip-preview"
+
+
+def test_generate_music_does_not_forward_duration_to_sdk(
+    tmp_path: Path, mock_genai_client: MagicMock
+) -> None:
+    """Locks in that duration_seconds is intentionally not passed to the SDK.
+
+    GenerateContentConfig does not accept a duration field for AUDIO modality
+    (as of this commit). If a future change wires it up, this test should be
+    updated, not silently broken.
+    """
+    mock_genai_client.models.generate_content.return_value = _fake_audio_response()
+
+    import server
+
+    server.gemini_generate_music.fn(
+        prompt="hi",
+        output_dir=str(tmp_path),
+        duration_seconds=120,
+    )
+
+    config = mock_genai_client.models.generate_content.call_args.kwargs["config"]
+    assert not hasattr(config, "duration_seconds") or getattr(config, "duration_seconds", None) is None
