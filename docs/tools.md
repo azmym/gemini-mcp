@@ -58,18 +58,18 @@ Single-turn text generation.
 | `system_instruction` | str\|None | None | Optional system prompt |
 | `temperature` | float | 0.7 | Sampling temperature |
 | `max_output_tokens` | int\|None | None | Cap on response length |
-| `model` | str\|None | None | Resolves to `gemini-2.5-pro` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-pro-preview` when unset |
 
 **Success response:**
 
 ```json
-{"text": "<answer>", "tokens_used": 1234, "model": "gemini-2.5-pro"}
+{"text": "<answer>", "tokens_used": 1234, "model": "gemini-3.1-pro-preview"}
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-2.5-pro"}
+{"error": "<message>", "model": "gemini-3.1-pro-preview"}
 ```
 
 ---
@@ -95,21 +95,21 @@ Native Gemini image generation. Writes PNG files to `output_dir` and returns abs
 | `prompt` | str | required | Text description |
 | `output_dir` | str | `/tmp/gemini-images` | Created if missing |
 | `count` | int | 1 | Number of candidates |
-| `model` | str\|None | None | Resolves to `gemini-2.5-flash-image` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image-preview` when unset |
 
 **Success response:**
 
 ```json
 {
   "paths": ["/tmp/gemini-images/gemini-1713380000-a1b2c3d4.png"],
-  "model": "gemini-2.5-flash-image"
+  "model": "gemini-3.1-flash-image-preview"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-2.5-flash-image"}
+{"error": "<message>", "model": "gemini-3.1-flash-image-preview"}
 ```
 
 ---
@@ -137,21 +137,21 @@ Image generation with Imagen 4 (text-to-image, PNG output).
 | `output_dir` | str | `/tmp/gemini-images` | Created if missing |
 | `count` | int | 1 | Must be 1 to 4 inclusive |
 | `aspect_ratio` | str | `"1:1"` | One of: `"1:1"`, `"16:9"`, `"9:16"`, `"4:3"`, `"3:4"` |
-| `model` | str\|None | None | Resolves to `imagen-4.0-generate-001` when unset |
+| `model` | str\|None | None | Resolves to `imagen-4.0-ultra-generate-001` when unset |
 
 **Success response:**
 
 ```json
 {
   "paths": ["/tmp/gemini-images/imagen-1776443000-ab12cd34.png"],
-  "model": "imagen-4.0-generate-001"
+  "model": "imagen-4.0-ultra-generate-001"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "count must be between 1 and 4", "model": "imagen-4.0-generate-001"}
+{"error": "count must be between 1 and 4", "model": "imagen-4.0-ultra-generate-001"}
 ```
 
 **Notes:** Imagen 4 uses a different SDK entry point (`client.models.generate_images`) from `gemini_generate_image`.
@@ -172,7 +172,7 @@ Gemini writes Python, runs it in its sandbox, and returns the result.
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `prompt` | str | required | Question or task |
-| `model` | str\|None | None | Resolves to `gemini-2.5-pro` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-pro-preview-customtools` when unset |
 
 **Success response:**
 
@@ -181,14 +181,14 @@ Gemini writes Python, runs it in its sandbox, and returns the result.
   "answer": "The 100th Fibonacci number is 354224848179261915075.",
   "code": "def fib(n): ...",
   "stdout": "354224848179261915075\n",
-  "model": "gemini-2.5-pro"
+  "model": "gemini-3.1-pro-preview-customtools"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-2.5-pro"}
+{"error": "<message>", "model": "gemini-3.1-pro-preview-customtools"}
 ```
 
 ---
@@ -207,7 +207,7 @@ Text generation grounded with Google Search. Returns answer plus source citation
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `prompt` | str | required | Question |
-| `model` | str\|None | None | Resolves to `gemini-2.5-flash` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.5-flash` when unset |
 
 **Success response:**
 
@@ -217,14 +217,14 @@ Text generation grounded with Google Search. Returns answer plus source citation
   "citations": [
     {"url": "https://example.com/a", "title": "Example A"}
   ],
-  "model": "gemini-2.5-flash"
+  "model": "gemini-3.5-flash"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-2.5-flash"}
+{"error": "<message>", "model": "gemini-3.5-flash"}
 ```
 
 ---
@@ -248,7 +248,7 @@ Uploads a local file (PDF, image, audio, video) via the Files API and answers a 
 |---|---|---|---|
 | `file_path` | str | required | Absolute path to a local file |
 | `prompt` | str | required | Question about the file |
-| `model` | str\|None | None | Resolves to `gemini-2.5-pro` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-pro-preview` when unset |
 
 **Success response:**
 
@@ -256,14 +256,14 @@ Uploads a local file (PDF, image, audio, video) via the Files API and answers a 
 {
   "answer": "<answer>",
   "file_uri": "files/abc123",
-  "model": "gemini-2.5-pro"
+  "model": "gemini-3.1-pro-preview"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "File not found: /bad/path", "model": "gemini-2.5-pro"}
+{"error": "File not found: /bad/path", "model": "gemini-3.1-pro-preview"}
 ```
 
 **Notes:** Files uploaded to the Files API expire on Google's servers after 48 hours.
@@ -291,18 +291,18 @@ Multi-turn chat keyed by `session_id`. State is held in memory for the server li
 | `session_id` | str | required | Arbitrary caller-chosen string; identifies the chat |
 | `message` | str | required | Next user message |
 | `system_instruction` | str\|None | None | Applied only on first turn; ignored on subsequent calls |
-| `model` | str\|None | None | Resolves to `gemini-2.5-flash` when unset; only used when creating a new session |
+| `model` | str\|None | None | Resolves to `gemini-3.5-flash` when unset; only used when creating a new session |
 
 **Success response:**
 
 ```json
-{"response": "<reply>", "turn": 3, "model": "gemini-2.5-flash"}
+{"response": "<reply>", "turn": 3, "model": "gemini-3.5-flash"}
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-2.5-flash"}
+{"error": "<message>", "model": "gemini-3.5-flash"}
 ```
 
 **Notes:** Sessions do not persist across server restarts. There is no way to list or delete sessions; they live until the process exits.
@@ -330,18 +330,16 @@ Kicks off a Veo video generation. Returns an `operation_id` to poll with `gemini
 |---|---|---|---|
 | `prompt` | str | required | Text description |
 | `aspect_ratio` | str | `"16:9"` | `"16:9"` or `"9:16"` |
-| `duration_seconds` | int | 5 | Veo 3 accepts roughly 4 to 8 seconds |
+| `duration_seconds` | int | 5 | Veo 3.1 accepts roughly 4 to 8 seconds |
 | `image_path` | str\|None | None | If set, image-to-video mode; must be a local file |
-| `model` | str\|None | None | Resolves to `veo-3.0-generate-001` when unset (sunset 2026-06-30, see [migration guide](migration-veo-3.1.md)) |
-
-> **Note:** `veo-3.0-*` and `veo-2.0-*` IDs will return `404 Not Found` after 2026-06-30. Pass `model="veo-3.1-generate-preview"` (or set `GEMINI_DEFAULT_MODEL`) to switch today. See [Migrating to Veo 3.1](migration-veo-3.1.md).
+| `model` | str\|None | None | Resolves to `veo-3.1-generate-preview` when unset (Veo 3.0 IDs sunset 2026-06-30; see [migration guide](migration-v0.2.md)) |
 
 **Success response:**
 
 ```json
 {
   "operation_id": "a1b2c3d4e5f6",
-  "model": "veo-3.0-generate-001",
+  "model": "veo-3.1-generate-preview",
   "message": "Video generation started. Poll with gemini_get_video."
 }
 ```
@@ -349,7 +347,7 @@ Kicks off a Veo video generation. Returns an `operation_id` to poll with `gemini
 **Error response:**
 
 ```json
-{"error": "File not found: /path/to/image.png", "model": "veo-3.0-generate-001"}
+{"error": "File not found: /path/to/image.png", "model": "veo-3.1-generate-preview"}
 ```
 
 **Notes:** `operation_id` is invalidated when the server process restarts.
