@@ -203,7 +203,7 @@ def gemini_code_execute(
 
     Returns the final answer plus the code and stdout.
     """
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview-customtools")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
