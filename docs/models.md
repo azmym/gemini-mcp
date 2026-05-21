@@ -34,8 +34,8 @@ The response lists every model your API key can access, along with supported act
 
 | Model ID | Alias | Status |
 |---|---|---|
-| `gemini-2.5-flash-image` | Nano Banana | Stable (default) |
-| `gemini-3.1-flash-image-preview` | Nano Banana 2 | Preview |
+| `gemini-2.5-flash-image` | Nano Banana | Stable |
+| `gemini-3.1-flash-image-preview` | Nano Banana 2 | Preview (default) |
 | `gemini-3-pro-image-preview` | Nano Banana Pro | Preview |
 
 All three are text-to-image. Nano Banana also supports reference-image editing (up to 14 input images per prompt) but this server does not expose that surface today; `gemini_generate_image` is text-only.

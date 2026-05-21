@@ -65,15 +65,18 @@ https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architec
 | Tool | Default model | Purpose |
 |---|---|---|
 | `gemini_list_models` | n/a | Lists available Gemini models with capabilities and token limits |
-| `gemini_generate` | `gemini-2.5-pro` | Single-turn text generation with optional system prompt and sampling controls |
-| `gemini_generate_image` | `gemini-2.5-flash-image` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
-| `gemini_code_execute` | `gemini-2.5-pro` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
-| `gemini_search_grounded` | `gemini-2.5-flash` | Text generation grounded with Google Search; returns answer and citations |
-| `gemini_analyze_file` | `gemini-2.5-pro` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
-| `gemini_chat` | `gemini-2.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
-| `gemini_generate_image_imagen` | `imagen-4.0-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
-| `gemini_start_video` | `veo-3.0-generate-001` | Kicks off a Veo video generation; returns an `operation_id` for polling |
+| `gemini_generate` | `gemini-3.1-pro-preview` | Single-turn text generation with optional system prompt and sampling controls |
+| `gemini_generate_image` | `gemini-3.1-flash-image-preview` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
+| `gemini_code_execute` | `gemini-3.1-pro-preview-customtools` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
+| `gemini_search_grounded` | `gemini-3.5-flash` | Text generation grounded with Google Search; returns answer and citations |
+| `gemini_analyze_file` | `gemini-3.1-pro-preview` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
+| `gemini_chat` | `gemini-3.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
+| `gemini_generate_image_imagen` | `imagen-4.0-ultra-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
+| `gemini_start_video` | `veo-3.1-generate-preview` | Kicks off a Veo video generation; returns an `operation_id` for polling |
 | `gemini_get_video` | n/a | Polls a Veo operation started by `gemini_start_video`; writes the MP4 when done |
+| `gemini_generate_music` | `lyria-3-pro-preview` | Generate music from a text prompt (Lyria 3) |
+| `gemini_tts` | `gemini-3.1-flash-tts-preview` | Synthesize speech (single-voice or multi-speaker) |
+| `gemini_start_research` / `gemini_get_research_report` | `deep-research-max-preview-04-2026` | Deep Research synthesis (polling pair) |
 
 Every tool accepts a `model` parameter to override the default for that call. Set `GEMINI_DEFAULT_MODEL` to override every tool's default globally.
 
@@ -259,7 +262,7 @@ Example response:
     "/tmp/gemini-images/gemini-1713380000-e5f6a7b8.png",
     "/tmp/gemini-images/gemini-1713380000-c9d0e1f2.png"
   ],
-  "model": "gemini-2.5-flash-image"
+  "model": "gemini-3.1-flash-image-preview"
 }
 ```
 
@@ -281,7 +284,7 @@ Example response:
     {"url": "https://www.python.org/downloads/", "title": "Download Python"},
     {"url": "https://docs.python.org/3/whatsnew/3.13.html", "title": "What's New in Python 3.13"}
   ],
-  "model": "gemini-2.5-flash"
+  "model": "gemini-3.5-flash"
 }
 ```
 
@@ -301,7 +304,7 @@ Tool: gemini_start_video
 Response:
 
 ```json
-{"operation_id": "a1b2c3d4e5f6", "model": "veo-3.0-generate-001", "message": "Video generation started. Poll with gemini_get_video."}
+{"operation_id": "a1b2c3d4e5f6", "model": "veo-3.1-generate-preview", "message": "Video generation started. Poll with gemini_get_video."}
 ```
 
 Step 2: poll until the status is `done`.
