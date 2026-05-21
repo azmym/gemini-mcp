@@ -113,7 +113,7 @@ def gemini_generate_image(
 
     Writes PNG files to `output_dir` and returns their absolute paths.
     """
-    chosen = _resolve_model(model, "gemini-2.5-flash-image")
+    chosen = _resolve_model(model, "gemini-3.1-flash-image-preview")
     try:
         client = _ensure_client()
         out_path = Path(output_dir).expanduser().resolve()
