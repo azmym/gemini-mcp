@@ -243,6 +243,89 @@ def gemini_generate_music(
 
 
 @mcp.tool()
+def gemini_tts(
+    text: str,
+    output_dir: str = "/tmp/gemini-tts",
+    voice: str = "Kore",
+    speakers: list[dict[str, str]] | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Synthesize speech from text using Gemini 3.1 TTS.
+
+    Single-voice mode: pass `text` and optionally `voice`.
+    Multi-speaker mode: pass `speakers=[{"name": "Alice", "voice": "Kore"}, ...]`
+    and write `text` as "Alice: ...\\nBob: ..." with the speaker name as a prefix.
+    """
+    chosen = _resolve_model(model, "gemini-3.1-flash-tts-preview")
+
+    if speakers is not None:
+        if not isinstance(speakers, list) or not all(
+            isinstance(s, dict) and "name" in s and "voice" in s
+            and isinstance(s["name"], str) and isinstance(s["voice"], str)
+            for s in speakers
+        ):
+            return {
+                "error": "speakers must be a list of {name, voice} dicts",
+                "model": chosen,
+            }
+
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        if speakers is None:
+            speech_config = genai_types.SpeechConfig(
+                voice_config=genai_types.VoiceConfig(
+                    prebuilt_voice_config=genai_types.PrebuiltVoiceConfig(
+                        voice_name=voice,
+                    ),
+                ),
+            )
+        else:
+            speech_config = genai_types.SpeechConfig(
+                multi_speaker_voice_config=genai_types.MultiSpeakerVoiceConfig(
+                    speaker_voice_configs=[
+                        genai_types.SpeakerVoiceConfig(
+                            speaker=s["name"],
+                            voice_config=genai_types.VoiceConfig(
+                                prebuilt_voice_config=genai_types.PrebuiltVoiceConfig(
+                                    voice_name=s["voice"],
+                                ),
+                            ),
+                        )
+                        for s in speakers
+                    ],
+                ),
+            )
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+            speech_config=speech_config,
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=text,
+            config=config,
+        )
+
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                stamp = int(time.time())
+                fname = f"tts-{stamp}-{uuid.uuid4().hex[:8]}.wav"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                return {"path": str(fpath), "model": chosen}
+
+        return {"error": "no audio returned", "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
 def gemini_code_execute(
     prompt: str,
     model: str | None = None,
