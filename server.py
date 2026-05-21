@@ -19,6 +19,7 @@ mcp = FastMCP("gemini")
 
 _sessions: dict[str, Any] = {}
 _video_ops: dict[str, Any] = {}
+_research_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
 
 
@@ -553,6 +554,95 @@ def gemini_get_video(
         return {"status": "done", "path": str(fpath), "operation_id": operation_id}
     except Exception as exc:  # noqa: BLE001
         _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+
+@mcp.tool()
+def gemini_start_research(
+    prompt: str,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Start a Deep Research synthesis. Returns operation_id; poll with gemini_get_research_report.
+
+    Long-running operation. Pass a research question, get a structured report when done.
+    """
+    chosen = _resolve_model(model, "deep-research-max-preview-04-2026")
+    try:
+        client = _ensure_client()
+        operation = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+        )
+        op_id = uuid.uuid4().hex[:12]
+        _research_ops[op_id] = operation
+        return {
+            "operation_id": op_id,
+            "model": chosen,
+            "message": "Research started. Poll with gemini_get_research_report.",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_get_research_report(
+    operation_id: str,
+    output_dir: str = "/tmp/gemini-research",
+) -> dict[str, Any]:
+    """Poll a Deep Research operation started by gemini_start_research.
+
+    Returns status "running", "done" (with path and inline report), "error", or "unknown".
+    """
+    op = _research_ops.get(operation_id)
+    if op is None:
+        return {"status": "unknown", "error": "operation_id not found"}
+
+    try:
+        client = _ensure_client()
+        op = client.operations.get(op)
+        _research_ops[operation_id] = op
+    except Exception as exc:  # noqa: BLE001
+        _research_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+    if not getattr(op, "done", False):
+        return {"status": "running", "operation_id": operation_id}
+
+    try:
+        candidates = getattr(op.result, "candidates", None) or []
+        text_parts: list[str] = []
+        citations: list[dict[str, str]] = []
+        for candidate in candidates:
+            for part in getattr(candidate.content, "parts", []) or []:
+                if getattr(part, "text", None):
+                    text_parts.append(part.text)
+            metadata = getattr(candidate, "grounding_metadata", None)
+            if metadata is None:
+                continue
+            for chunk in getattr(metadata, "grounding_chunks", []) or []:
+                web = getattr(chunk, "web", None)
+                if web and getattr(web, "uri", None):
+                    citations.append(
+                        {"url": web.uri, "title": getattr(web, "title", "") or ""}
+                    )
+
+        report = "\n".join(text_parts).strip() or (getattr(op.result, "text", "") or "")
+        out = Path(output_dir).expanduser().resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        stamp = int(time.time())
+        fname = f"research-{stamp}-{uuid.uuid4().hex[:8]}.md"
+        fpath = out / fname
+        fpath.write_text(report)
+        _research_ops.pop(operation_id, None)
+        return {
+            "status": "done",
+            "path": str(fpath),
+            "report": report,
+            "citations": citations,
+            "operation_id": operation_id,
+        }
+    except Exception as exc:  # noqa: BLE001
+        _research_ops.pop(operation_id, None)
         return {"status": "error", "error": str(exc), "operation_id": operation_id}
 
 
