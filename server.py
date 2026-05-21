@@ -195,6 +195,51 @@ def gemini_generate_image_imagen(
 
 
 @mcp.tool()
+def gemini_generate_music(
+    prompt: str,
+    output_dir: str = "/tmp/gemini-music",
+    duration_seconds: int = 30,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generate music from a text prompt with Lyria 3.
+
+    Writes a WAV file to `output_dir` and returns its absolute path.
+    `duration_seconds` must be > 0; the model enforces its own upper bound.
+    """
+    chosen = _resolve_model(model, "lyria-3-pro-preview")
+    if duration_seconds <= 0:
+        return {"error": "duration_seconds must be > 0", "model": chosen}
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                stamp = int(time.time())
+                fname = f"lyria-{stamp}-{uuid.uuid4().hex[:8]}.wav"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                return {"path": str(fpath), "model": chosen}
+
+        return {"error": "no audio returned", "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
 def gemini_code_execute(
     prompt: str,
     model: str | None = None,
