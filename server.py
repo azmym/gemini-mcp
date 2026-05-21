@@ -83,7 +83,7 @@ def gemini_generate(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Single-turn text generation with optional system prompt and sampling controls."""
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
