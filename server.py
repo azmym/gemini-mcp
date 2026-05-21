@@ -243,7 +243,7 @@ def gemini_search_grounded(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Text generation grounded with Google Search. Returns answer and citations."""
-    chosen = _resolve_model(model, "gemini-2.5-flash")
+    chosen = _resolve_model(model, "gemini-3.5-flash")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
