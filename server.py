@@ -159,7 +159,7 @@ def gemini_generate_image_imagen(
     Uses `client.models.generate_images()`. Supported aspect ratios:
     "1:1", "16:9", "9:16", "4:3", "3:4". Count must be 1 to 4.
     """
-    chosen = _resolve_model(model, "imagen-4.0-generate-001")
+    chosen = _resolve_model(model, "imagen-4.0-ultra-generate-001")
     if count < 1 or count > 4:
         return {"error": "count must be between 1 and 4", "model": chosen}
     try:

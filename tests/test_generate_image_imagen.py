@@ -33,7 +33,7 @@ def test_imagen_writes_png(
     assert written.exists()
     assert written.read_bytes().startswith(b"\x89PNG")
     assert written.name.startswith("imagen-")
-    assert result["model"] == "imagen-4.0-generate-001"
+    assert result["model"] == "imagen-4.0-ultra-generate-001"
 
 
 def test_imagen_passes_count_and_aspect_ratio(
@@ -104,7 +104,7 @@ def test_imagen_wraps_errors(
         count=1,
     )
 
-    assert result == {"error": "quota exceeded", "model": "imagen-4.0-generate-001"}
+    assert result == {"error": "quota exceeded", "model": "imagen-4.0-ultra-generate-001"}
 
 
 def test_imagen_model_override(
