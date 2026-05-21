@@ -65,15 +65,18 @@ https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architec
 | Tool | Default model | Purpose |
 |---|---|---|
 | `gemini_list_models` | n/a | Lists available Gemini models with capabilities and token limits |
-| `gemini_generate` | `gemini-2.5-pro` | Single-turn text generation with optional system prompt and sampling controls |
-| `gemini_generate_image` | `gemini-2.5-flash-image` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
-| `gemini_code_execute` | `gemini-2.5-pro` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
-| `gemini_search_grounded` | `gemini-2.5-flash` | Text generation grounded with Google Search; returns answer and citations |
-| `gemini_analyze_file` | `gemini-2.5-pro` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
-| `gemini_chat` | `gemini-2.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
-| `gemini_generate_image_imagen` | `imagen-4.0-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
-| `gemini_start_video` | `veo-3.0-generate-001` | Kicks off a Veo video generation; returns an `operation_id` for polling |
+| `gemini_generate` | `gemini-3.1-pro-preview` | Single-turn text generation with optional system prompt and sampling controls |
+| `gemini_generate_image` | `gemini-3.1-flash-image-preview` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
+| `gemini_code_execute` | `gemini-3.1-pro-preview-customtools` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
+| `gemini_search_grounded` | `gemini-3.5-flash` | Text generation grounded with Google Search; returns answer and citations |
+| `gemini_analyze_file` | `gemini-3.1-pro-preview` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
+| `gemini_chat` | `gemini-3.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
+| `gemini_generate_image_imagen` | `imagen-4.0-ultra-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
+| `gemini_start_video` | `veo-3.1-generate-preview` | Kicks off a Veo video generation; returns an `operation_id` for polling |
 | `gemini_get_video` | n/a | Polls a Veo operation started by `gemini_start_video`; writes the MP4 when done |
+| `gemini_generate_music` | `lyria-3-pro-preview` | Generate music from a text prompt (Lyria 3) |
+| `gemini_tts` | `gemini-3.1-flash-tts-preview` | Synthesize speech (single-voice or multi-speaker) |
+| `gemini_start_research` / `gemini_get_research_report` | `deep-research-max-preview-04-2026` | Deep Research synthesis (polling pair) |
 
 Every tool accepts a `model` parameter to override the default for that call. Set `GEMINI_DEFAULT_MODEL` to override every tool's default globally.
 
@@ -186,15 +189,17 @@ Tool: gemini_list_models
 
 | Goal | Model |
 |---|---|
-| Fast, cheap chat or short answers | `gemini-2.5-flash` |
-| Strongest stable reasoning, code, analysis | `gemini-2.5-pro` |
-| Latest preview, advanced reasoning | `gemini-3.1-pro-preview` |
-| Fast preview variant | `gemini-3-flash-preview` |
+| Fast, cheap chat or short answers | `gemini-3.5-flash` |
+| Strongest reasoning, code, analysis | `gemini-3.1-pro-preview` |
+| Stable reasoning (no preview) | `gemini-2.5-pro` |
 | Stable native image generation (Nano Banana) | `gemini-2.5-flash-image` |
-| Preview native image generation (Nano Banana Pro / Nano Banana 2) | `gemini-3-pro-image-preview` or `gemini-3.1-flash-image-preview` |
-| High-quality Imagen image generation | `imagen-4.0-generate-001` (standard), `imagen-4.0-ultra-generate-001` (highest fidelity), `imagen-4.0-fast-generate-001` (quickest) |
-| Video generation (Veo) | `veo-3.0-generate-001` (current default, sunset 2026-06-30), `veo-3.0-fast-generate-001` (sunset 2026-06-30), `veo-3.1-generate-preview` (recommended), `veo-3.1-fast-generate-preview` |
-| Grounded answers with citations | `gemini-2.5-flash` (fast) or `gemini-2.5-pro` (thorough) |
+| Latest native image generation (Nano Banana 2 / Pro) | `gemini-3.1-flash-image-preview` (default) or `gemini-3-pro-image-preview` |
+| High-quality Imagen image generation | `imagen-4.0-ultra-generate-001` (default), `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001` |
+| Video generation (Veo) | `veo-3.1-generate-preview` (default), `veo-3.1-fast-generate-preview`, `veo-3.1-lite-generate-preview` |
+| Music generation (Lyria) | `lyria-3-pro-preview` (default) or `lyria-3-clip-preview` |
+| Text-to-speech | `gemini-3.1-flash-tts-preview` (default) |
+| Deep Research | `deep-research-max-preview-04-2026` (default) or `deep-research-pro-preview-12-2025` |
+| Grounded answers with citations | `gemini-3.5-flash` |
 
 Preview models can change behavior or availability without notice. Stick to the stable models for workflows you rely on; use previews for experimentation.
 
@@ -257,7 +262,7 @@ Example response:
     "/tmp/gemini-images/gemini-1713380000-e5f6a7b8.png",
     "/tmp/gemini-images/gemini-1713380000-c9d0e1f2.png"
   ],
-  "model": "gemini-2.5-flash-image"
+  "model": "gemini-3.1-flash-image-preview"
 }
 ```
 
@@ -279,7 +284,7 @@ Example response:
     {"url": "https://www.python.org/downloads/", "title": "Download Python"},
     {"url": "https://docs.python.org/3/whatsnew/3.13.html", "title": "What's New in Python 3.13"}
   ],
-  "model": "gemini-2.5-flash"
+  "model": "gemini-3.5-flash"
 }
 ```
 
@@ -299,7 +304,7 @@ Tool: gemini_start_video
 Response:
 
 ```json
-{"operation_id": "a1b2c3d4e5f6", "model": "veo-3.0-generate-001", "message": "Video generation started. Poll with gemini_get_video."}
+{"operation_id": "a1b2c3d4e5f6", "model": "veo-3.1-generate-preview", "message": "Video generation started. Poll with gemini_get_video."}
 ```
 
 Step 2: poll until the status is `done`.
@@ -331,7 +336,7 @@ Call `gemini_list_models` to retrieve the full list of models your API key can a
 Tool: gemini_list_models
 ```
 
-The server can use any model string accepted by the Google AI Studio API. At the time of writing, this includes Gemini 3 preview models (such as `gemini-3.1-pro-preview`), Imagen 4 for image generation, and Veo 3 for video generation. Pass the model name explicitly in any tool call to use a non-default model.
+The server can use any model string accepted by the Google AI Studio API. At the time of writing, this includes Gemini 3.x preview models (such as `gemini-3.1-pro-preview`), Imagen 4 for image generation, Veo 3.1 for video generation, Lyria 3 for music, Gemini 3.1 TTS for speech synthesis, and Deep Research for long-form synthesis. Pass the model name explicitly in any tool call to use a non-default model.
 
 ## Development
 
@@ -390,7 +395,7 @@ Issues and pull requests are welcome. If you find a bug or want to propose a new
 - [Configuration](docs/configuration.md) - environment variables and model resolution priority
 - [Tools reference](docs/tools.md) - every MCP tool with parameters and example responses
 - [Models](docs/models.md) - choosing between Gemini, Imagen, and Veo models
-- [Migrating to Veo 3.1](docs/migration-veo-3.1.md) - sunset notice for Veo 2 and Veo 3.0 model IDs (2026-06-30)
+- [Migrating to v0.2.0](docs/migration-v0.2.md) - default model flips and pin recipes for v0.2.0
 
 ## License
 

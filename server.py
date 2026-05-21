@@ -7,6 +7,7 @@ from __future__ import annotations
 
 import os
 import time
+import concurrent.futures
 import uuid
 from pathlib import Path
 from typing import Any
@@ -19,7 +20,24 @@ mcp = FastMCP("gemini")
 
 _sessions: dict[str, Any] = {}
 _video_ops: dict[str, Any] = {}
+_research_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
+_research_executor: concurrent.futures.ThreadPoolExecutor | None = None
+
+
+def _ensure_research_executor() -> concurrent.futures.ThreadPoolExecutor:
+    """Lazy-init thread pool for Deep Research synchronous calls.
+
+    Deep Research models use the synchronous generateContent endpoint but can
+    take minutes. A background thread keeps the MCP server responsive and
+    makes the polling pair pattern work.
+    """
+    global _research_executor
+    if _research_executor is None:
+        _research_executor = concurrent.futures.ThreadPoolExecutor(
+            max_workers=4, thread_name_prefix="gemini-research"
+        )
+    return _research_executor
 
 
 def _build_client() -> genai.Client:
@@ -83,7 +101,7 @@ def gemini_generate(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Single-turn text generation with optional system prompt and sampling controls."""
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -113,7 +131,7 @@ def gemini_generate_image(
 
     Writes PNG files to `output_dir` and returns their absolute paths.
     """
-    chosen = _resolve_model(model, "gemini-2.5-flash-image")
+    chosen = _resolve_model(model, "gemini-3.1-flash-image-preview")
     try:
         client = _ensure_client()
         out_path = Path(output_dir).expanduser().resolve()
@@ -159,7 +177,7 @@ def gemini_generate_image_imagen(
     Uses `client.models.generate_images()`. Supported aspect ratios:
     "1:1", "16:9", "9:16", "4:3", "3:4". Count must be 1 to 4.
     """
-    chosen = _resolve_model(model, "imagen-4.0-generate-001")
+    chosen = _resolve_model(model, "imagen-4.0-ultra-generate-001")
     if count < 1 or count > 4:
         return {"error": "count must be between 1 and 4", "model": chosen}
     try:
@@ -195,6 +213,137 @@ def gemini_generate_image_imagen(
 
 
 @mcp.tool()
+def gemini_generate_music(
+    prompt: str,
+    output_dir: str = "/tmp/gemini-music",
+    duration_seconds: int = 30,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Generate music from a text prompt with Lyria 3.
+
+    Writes a WAV file to `output_dir` and returns its absolute path.
+    `duration_seconds` is currently validated client-side (`> 0`) but NOT
+    forwarded to the SDK: `GenerateContentConfig` does not yet accept a
+    duration field for AUDIO modality. Encode duration hints in the prompt
+    until the SDK exposes it.
+    """
+    chosen = _resolve_model(model, "lyria-3-pro-preview")
+    if duration_seconds <= 0:
+        return {"error": "duration_seconds must be > 0", "model": chosen}
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=prompt,
+            config=config,
+        )
+
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                stamp = int(time.time())
+                fname = f"lyria-{stamp}-{uuid.uuid4().hex[:8]}.wav"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                return {"path": str(fpath), "model": chosen}
+
+        return {"error": "no audio returned", "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_tts(
+    text: str,
+    output_dir: str = "/tmp/gemini-tts",
+    voice: str = "Kore",
+    speakers: list[dict[str, str]] | None = None,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Synthesize speech from text using Gemini 3.1 TTS.
+
+    Single-voice mode: pass `text` and optionally `voice`.
+    Multi-speaker mode: pass `speakers=[{"name": "Alice", "voice": "Kore"}, ...]`
+    and write `text` as "Alice: ...\\nBob: ..." with the speaker name as a prefix.
+    """
+    chosen = _resolve_model(model, "gemini-3.1-flash-tts-preview")
+
+    if speakers is not None:
+        if not isinstance(speakers, list) or not all(
+            isinstance(s, dict) and "name" in s and "voice" in s
+            and isinstance(s["name"], str) and isinstance(s["voice"], str)
+            for s in speakers
+        ):
+            return {
+                "error": "speakers must be a list of {name, voice} dicts",
+                "model": chosen,
+            }
+
+    try:
+        client = _ensure_client()
+        out_path = Path(output_dir).expanduser().resolve()
+        out_path.mkdir(parents=True, exist_ok=True)
+
+        if speakers is None:
+            speech_config = genai_types.SpeechConfig(
+                voice_config=genai_types.VoiceConfig(
+                    prebuilt_voice_config=genai_types.PrebuiltVoiceConfig(
+                        voice_name=voice,
+                    ),
+                ),
+            )
+        else:
+            speech_config = genai_types.SpeechConfig(
+                multi_speaker_voice_config=genai_types.MultiSpeakerVoiceConfig(
+                    speaker_voice_configs=[
+                        genai_types.SpeakerVoiceConfig(
+                            speaker=s["name"],
+                            voice_config=genai_types.VoiceConfig(
+                                prebuilt_voice_config=genai_types.PrebuiltVoiceConfig(
+                                    voice_name=s["voice"],
+                                ),
+                            ),
+                        )
+                        for s in speakers
+                    ],
+                ),
+            )
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["AUDIO"],
+            speech_config=speech_config,
+        )
+        response = client.models.generate_content(
+            model=chosen,
+            contents=text,
+            config=config,
+        )
+
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                stamp = int(time.time())
+                fname = f"tts-{stamp}-{uuid.uuid4().hex[:8]}.wav"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                return {"path": str(fpath), "model": chosen}
+
+        return {"error": "no audio returned", "model": chosen}
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
 def gemini_code_execute(
     prompt: str,
     model: str | None = None,
@@ -203,7 +352,7 @@ def gemini_code_execute(
 
     Returns the final answer plus the code and stdout.
     """
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview-customtools")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -243,7 +392,7 @@ def gemini_search_grounded(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Text generation grounded with Google Search. Returns answer and citations."""
-    chosen = _resolve_model(model, "gemini-2.5-flash")
+    chosen = _resolve_model(model, "gemini-3.5-flash")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -285,7 +434,7 @@ def gemini_analyze_file(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Upload a local file (PDF, image, audio, video) and ask Gemini about it."""
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview")
     path = Path(file_path).expanduser().resolve()
     if not path.is_file():
         return {"error": f"File not found: {file_path}", "model": chosen}
@@ -314,7 +463,7 @@ def gemini_chat(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
-    chosen = _resolve_model(model, "gemini-2.5-flash")
+    chosen = _resolve_model(model, "gemini-3.5-flash")
     try:
         client = _ensure_client()
         session = _sessions.get(session_id)
@@ -348,7 +497,7 @@ def gemini_start_video(
     Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.
     When image_path is set, runs image-to-video mode.
     """
-    chosen = _resolve_model(model, "veo-3.0-generate-001")
+    chosen = _resolve_model(model, "veo-3.1-generate-preview")
     image = None
     if image_path:
         p = Path(image_path).expanduser().resolve()
@@ -422,6 +571,102 @@ def gemini_get_video(
         return {"status": "done", "path": str(fpath), "operation_id": operation_id}
     except Exception as exc:  # noqa: BLE001
         _video_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+
+@mcp.tool()
+def gemini_start_research(
+    prompt: str,
+    model: str | None = None,
+) -> dict[str, Any]:
+    """Start a Deep Research synthesis. Returns operation_id; poll with gemini_get_research_report.
+
+    Deep Research is a synchronous SDK call that can take minutes. This tool
+    runs it in a background thread so the MCP server stays responsive.
+    """
+    chosen = _resolve_model(model, "deep-research-max-preview-04-2026")
+    try:
+        client = _ensure_client()
+        executor = _ensure_research_executor()
+        future = executor.submit(
+            client.models.generate_content,
+            model=chosen,
+            contents=prompt,
+        )
+        op_id = uuid.uuid4().hex[:12]
+        _research_ops[op_id] = future
+        return {
+            "operation_id": op_id,
+            "model": chosen,
+            "message": "Research started. Poll with gemini_get_research_report.",
+        }
+    except Exception as exc:  # noqa: BLE001
+        return {"error": str(exc), "model": chosen}
+
+
+@mcp.tool()
+def gemini_get_research_report(
+    operation_id: str,
+    output_dir: str = "/tmp/gemini-research",
+) -> dict[str, Any]:
+    """Poll a Deep Research operation started by gemini_start_research.
+
+    Returns status "running", "done" (with path and inline report), "error", or "unknown".
+    """
+    future = _research_ops.get(operation_id)
+    if future is None:
+        return {"status": "unknown", "error": "operation_id not found"}
+
+    if not future.done():
+        return {"status": "running", "operation_id": operation_id}
+
+    try:
+        response = future.result()
+    except Exception as exc:  # noqa: BLE001
+        _research_ops.pop(operation_id, None)
+        return {"status": "error", "error": str(exc), "operation_id": operation_id}
+
+    try:
+        text_parts: list[str] = []
+        citations: list[dict[str, str]] = []
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                if getattr(part, "text", None):
+                    text_parts.append(part.text)
+            metadata = getattr(candidate, "grounding_metadata", None)
+            if metadata is None:
+                continue
+            for chunk in getattr(metadata, "grounding_chunks", []) or []:
+                web = getattr(chunk, "web", None)
+                if web and getattr(web, "uri", None):
+                    citations.append(
+                        {"url": web.uri, "title": getattr(web, "title", "") or ""}
+                    )
+
+        report = "\n".join(text_parts).strip() or (getattr(response, "text", "") or "")
+        if not report:
+            _research_ops.pop(operation_id, None)
+            return {
+                "status": "error",
+                "error": "Deep Research returned no text",
+                "operation_id": operation_id,
+            }
+        out = Path(output_dir).expanduser().resolve()
+        out.mkdir(parents=True, exist_ok=True)
+        stamp = int(time.time())
+        fname = f"research-{stamp}-{uuid.uuid4().hex[:8]}.md"
+        fpath = out / fname
+        fpath.write_text(report, encoding="utf-8")
+        _research_ops.pop(operation_id, None)
+        return {
+            "status": "done",
+            "path": str(fpath),
+            "report": report,
+            "citations": citations,
+            "operation_id": operation_id,
+        }
+    except Exception as exc:  # noqa: BLE001
+        _research_ops.pop(operation_id, None)
         return {"status": "error", "error": str(exc), "operation_id": operation_id}
 
 

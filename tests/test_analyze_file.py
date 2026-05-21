@@ -32,7 +32,7 @@ def test_analyze_file_uploads_and_asks(
     assert actual_path == str(pdf)
     assert result["answer"] == "summary here"
     assert result["file_uri"] == "files/abc123"
-    assert result["model"] == "gemini-2.5-pro"
+    assert result["model"] == "gemini-3.1-pro-preview"
 
 
 def test_analyze_file_returns_error_when_file_missing(mock_genai_client: MagicMock) -> None:
@@ -60,4 +60,4 @@ def test_analyze_file_wraps_sdk_errors(
         file_path=str(pdf), prompt="x"
     )
 
-    assert result == {"error": "upload failed", "model": "gemini-2.5-pro"}
+    assert result == {"error": "upload failed", "model": "gemini-3.1-pro-preview"}

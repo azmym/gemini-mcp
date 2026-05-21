@@ -21,7 +21,7 @@ def test_generate_returns_text_and_tokens(mock_genai_client: MagicMock) -> None:
 
     assert result["text"] == "hello world"
     assert result["tokens_used"] == 11
-    assert result["model"] == "gemini-2.5-pro"
+    assert result["model"] == "gemini-3.1-pro-preview"
 
 
 def test_generate_respects_model_parameter(mock_genai_client: MagicMock) -> None:
@@ -89,4 +89,4 @@ def test_generate_wraps_errors(mock_genai_client: MagicMock) -> None:
 
     result = server.gemini_generate.fn(prompt="hi")
 
-    assert result == {"error": "quota", "model": "gemini-2.5-pro"}
+    assert result == {"error": "quota", "model": "gemini-3.1-pro-preview"}

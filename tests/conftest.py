@@ -41,3 +41,11 @@ def reset_video_ops(monkeypatch: pytest.MonkeyPatch) -> None:
     import server
 
     monkeypatch.setattr(server, "_video_ops", {})
+
+
+@pytest.fixture
+def reset_research_ops(monkeypatch: pytest.MonkeyPatch) -> None:
+    """Clear the in-memory Deep Research operations dict between tests."""
+    import server
+
+    monkeypatch.setattr(server, "_research_ops", {})

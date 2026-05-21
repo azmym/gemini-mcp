@@ -29,7 +29,7 @@ def test_code_execute_extracts_code_stdout_and_answer(mock_genai_client: MagicMo
     assert result["answer"] == "The answer is 42."
     assert "21 * 2" in result["code"]
     assert result["stdout"] == "42"
-    assert result["model"] == "gemini-2.5-pro"
+    assert result["model"] == "gemini-3.1-pro-preview-customtools"
 
 
 def test_code_execute_enables_code_execution_tool(mock_genai_client: MagicMock) -> None:
@@ -51,4 +51,4 @@ def test_code_execute_wraps_errors(mock_genai_client: MagicMock) -> None:
 
     result = server.gemini_code_execute.fn(prompt="hi")
 
-    assert result == {"error": "nope", "model": "gemini-2.5-pro"}
+    assert result == {"error": "nope", "model": "gemini-3.1-pro-preview-customtools"}
