@@ -20,7 +20,7 @@ def test_start_video_stores_operation(
     assert "operation_id" in result
     op_id = result["operation_id"]
     assert isinstance(op_id, str) and len(op_id) >= 8
-    assert result["model"] == "veo-3.0-generate-001"
+    assert result["model"] == "veo-3.1-generate-preview"
     assert "gemini_get_video" in result.get("message", "")
     assert server._video_ops[op_id] is operation
 
@@ -89,5 +89,5 @@ def test_start_video_wraps_sdk_errors(
 
     result = server.gemini_start_video.fn(prompt="hi")
 
-    assert result == {"error": "veo down", "model": "veo-3.0-generate-001"}
+    assert result == {"error": "veo down", "model": "veo-3.1-generate-preview"}
     assert server._video_ops == {}

@@ -348,7 +348,7 @@ def gemini_start_video(
     Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.
     When image_path is set, runs image-to-video mode.
     """
-    chosen = _resolve_model(model, "veo-3.0-generate-001")
+    chosen = _resolve_model(model, "veo-3.1-generate-preview")
     image = None
     if image_path:
         p = Path(image_path).expanduser().resolve()
