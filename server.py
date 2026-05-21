@@ -285,7 +285,7 @@ def gemini_analyze_file(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Upload a local file (PDF, image, audio, video) and ask Gemini about it."""
-    chosen = _resolve_model(model, "gemini-2.5-pro")
+    chosen = _resolve_model(model, "gemini-3.1-pro-preview")
     path = Path(file_path).expanduser().resolve()
     if not path.is_file():
         return {"error": f"File not found: {file_path}", "model": chosen}
