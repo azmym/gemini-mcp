@@ -48,4 +48,4 @@ def reset_research_ops(monkeypatch: pytest.MonkeyPatch) -> None:
     """Clear the in-memory Deep Research operations dict between tests."""
     import server
 
-    monkeypatch.setattr(server, "_research_ops", {}, raising=False)
+    monkeypatch.setattr(server, "_research_ops", {})

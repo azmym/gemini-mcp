@@ -1,23 +1,17 @@
 """Tests for gemini_start_research and gemini_get_research_report tools."""
 from __future__ import annotations
 
+import concurrent.futures
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 
-def _fake_research_op(
-    done: bool = True,
+def _fake_response(
     text: str = "# Report\n\nFindings.",
     citations: list[dict] | None = None,
-) -> MagicMock:
-    """Build a fake Deep Research long-running operation object."""
-    op = MagicMock()
-    op.done = done
-    if not done:
-        op.result = None
-        return op
-
+) -> SimpleNamespace:
+    """Build a fake GenerateContentResponse with text and grounding metadata."""
     grounding_chunks = []
     for c in citations or []:
         web = SimpleNamespace(uri=c["url"], title=c.get("title", ""))
@@ -27,17 +21,38 @@ def _fake_research_op(
         content=SimpleNamespace(parts=[SimpleNamespace(text=text)]),
         grounding_metadata=grounding_metadata,
     )
-    op.result = SimpleNamespace(candidates=[candidate], text=text)
-    return op
+    return SimpleNamespace(candidates=[candidate], text=text)
 
 
-def test_start_research_stores_operation(
-    mock_genai_client: MagicMock, reset_research_ops: None
+def _completed_future(value=None, exc: Exception | None = None) -> concurrent.futures.Future:
+    """Build a Future that is already finished."""
+    fut: concurrent.futures.Future = concurrent.futures.Future()
+    if exc is not None:
+        fut.set_exception(exc)
+    else:
+        fut.set_result(value)
+    return fut
+
+
+def _running_future() -> concurrent.futures.Future:
+    """Build a Future that has not finished yet."""
+    return concurrent.futures.Future()
+
+
+def test_start_research_submits_to_executor(
+    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
 ) -> None:
-    operation = MagicMock(name="lro")
-    mock_genai_client.models.generate_content.return_value = operation
+    submitted = {}
+
+    class FakeExecutor:
+        def submit(self, fn, *args, **kwargs):
+            submitted["fn"] = fn
+            submitted["kwargs"] = kwargs
+            return _completed_future(value=_fake_response())
 
     import server
+
+    monkeypatch.setattr(server, "_ensure_research_executor", lambda: FakeExecutor())
 
     result = server.gemini_start_research.fn(prompt="What is X?")
 
@@ -46,15 +61,22 @@ def test_start_research_stores_operation(
     assert isinstance(op_id, str) and len(op_id) >= 8
     assert result["model"] == "deep-research-max-preview-04-2026"
     assert "gemini_get_research_report" in result.get("message", "")
-    assert server._research_ops[op_id] is operation
+    assert op_id in server._research_ops
+    assert submitted["fn"] is mock_genai_client.models.generate_content
+    assert submitted["kwargs"]["model"] == "deep-research-max-preview-04-2026"
+    assert submitted["kwargs"]["contents"] == "What is X?"
 
 
-def test_start_research_wraps_sdk_errors(
-    mock_genai_client: MagicMock, reset_research_ops: None
+def test_start_research_wraps_executor_errors(
+    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
 ) -> None:
-    mock_genai_client.models.generate_content.side_effect = RuntimeError("dr down")
+    class BoomExecutor:
+        def submit(self, fn, *args, **kwargs):
+            raise RuntimeError("dr down")
 
     import server
+
+    monkeypatch.setattr(server, "_ensure_research_executor", lambda: BoomExecutor())
 
     result = server.gemini_start_research.fn(prompt="hi")
 
@@ -63,58 +85,56 @@ def test_start_research_wraps_sdk_errors(
 
 
 def test_start_research_model_override(
-    mock_genai_client: MagicMock, reset_research_ops: None
+    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
 ) -> None:
-    operation = MagicMock(name="lro")
-    mock_genai_client.models.generate_content.return_value = operation
+    submitted = {}
+
+    class FakeExecutor:
+        def submit(self, fn, *args, **kwargs):
+            submitted["kwargs"] = kwargs
+            return _completed_future(value=_fake_response())
 
     import server
+
+    monkeypatch.setattr(server, "_ensure_research_executor", lambda: FakeExecutor())
 
     result = server.gemini_start_research.fn(
         prompt="hi", model="deep-research-pro-preview-12-2025"
     )
 
     assert result["model"] == "deep-research-pro-preview-12-2025"
-    call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "deep-research-pro-preview-12-2025"
+    assert submitted["kwargs"]["model"] == "deep-research-pro-preview-12-2025"
 
 
 def test_get_research_report_unknown_id(
-    mock_genai_client: MagicMock, reset_research_ops: None
+    reset_research_ops: None,
 ) -> None:
     import server
 
     result = server.gemini_get_research_report.fn(operation_id="nope")
 
     assert result == {"status": "unknown", "error": "operation_id not found"}
-    mock_genai_client.operations.get.assert_not_called()
 
 
 def test_get_research_report_running(
-    mock_genai_client: MagicMock, reset_research_ops: None
+    reset_research_ops: None,
 ) -> None:
-    op = _fake_research_op(done=False)
-
     import server
 
-    server._research_ops["op1"] = op
-    mock_genai_client.operations.get.return_value = op
+    server._research_ops["op1"] = _running_future()
 
     result = server.gemini_get_research_report.fn(operation_id="op1")
 
     assert result["status"] == "running"
     assert result["operation_id"] == "op1"
     assert "op1" in server._research_ops
-    mock_genai_client.operations.get.assert_called_once_with(op)
 
 
 def test_get_research_report_done_writes_markdown(
     tmp_path: Path,
-    mock_genai_client: MagicMock,
     reset_research_ops: None,
 ) -> None:
-    op = _fake_research_op(
-        done=True,
+    response = _fake_response(
         text="# Big Report\n\nContent.",
         citations=[
             {"url": "https://a.example", "title": "A"},
@@ -124,8 +144,7 @@ def test_get_research_report_done_writes_markdown(
 
     import server
 
-    server._research_ops["op2"] = op
-    mock_genai_client.operations.get.return_value = op
+    server._research_ops["op2"] = _completed_future(value=response)
 
     result = server.gemini_get_research_report.fn(
         operation_id="op2", output_dir=str(tmp_path)
@@ -140,24 +159,40 @@ def test_get_research_report_done_writes_markdown(
     ]
     written = Path(result["path"])
     assert written.exists()
-    assert written.read_text() == "# Big Report\n\nContent."
+    assert written.read_text(encoding="utf-8") == "# Big Report\n\nContent."
     assert written.name.startswith("research-")
     assert written.suffix == ".md"
     assert "op2" not in server._research_ops
 
 
-def test_get_research_report_refresh_raises(
-    mock_genai_client: MagicMock, reset_research_ops: None
+def test_get_research_report_future_raised(
+    reset_research_ops: None,
 ) -> None:
-    op = _fake_research_op(done=False)
-
     import server
 
-    server._research_ops["op3"] = op
-    mock_genai_client.operations.get.side_effect = RuntimeError("refresh failed")
+    server._research_ops["op3"] = _completed_future(exc=RuntimeError("synthesis failed"))
 
     result = server.gemini_get_research_report.fn(operation_id="op3")
 
     assert result["status"] == "error"
-    assert "refresh failed" in result["error"]
+    assert "synthesis failed" in result["error"]
     assert "op3" not in server._research_ops
+
+
+def test_get_research_report_empty_text_is_error(
+    tmp_path: Path,
+    reset_research_ops: None,
+) -> None:
+    response = SimpleNamespace(candidates=[], text="")
+
+    import server
+
+    server._research_ops["op4"] = _completed_future(value=response)
+
+    result = server.gemini_get_research_report.fn(
+        operation_id="op4", output_dir=str(tmp_path)
+    )
+
+    assert result["status"] == "error"
+    assert "no text" in result["error"].lower()
+    assert "op4" not in server._research_ops
