@@ -314,7 +314,7 @@ def gemini_chat(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
-    chosen = _resolve_model(model, "gemini-2.5-flash")
+    chosen = _resolve_model(model, "gemini-3.5-flash")
     try:
         client = _ensure_client()
         session = _sessions.get(session_id)
