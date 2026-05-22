@@ -8,7 +8,7 @@
 
 [![Python](https://img.shields.io/badge/python-3.11%2B-blue?logo=python&logoColor=white)](https://www.python.org/)
 [![License](https://img.shields.io/badge/license-MIT-green)](LICENSE)
-[![Tests](https://img.shields.io/badge/tests-49%20passing-brightgreen)](tests/)
+[![Tests](https://img.shields.io/badge/tests-69%20passing-brightgreen)](tests/)
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%203.x-purple)](https://gofastmcp.com/)
 [![Google AI Studio](https://img.shields.io/badge/backend-Google%20AI%20Studio-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
 
