@@ -12,7 +12,7 @@
 [![MCP](https://img.shields.io/badge/MCP-FastMCP%203.x-purple)](https://gofastmcp.com/)
 [![Google AI Studio](https://img.shields.io/badge/backend-Google%20AI%20Studio-4285F4?logo=google&logoColor=white)](https://aistudio.google.com/)
 
-10 MCP tools. Text, images, video, code execution, multi-modal file analysis, and search-grounded answers, all from one API key.
+13 MCP tools. Text, images, video, music, speech synthesis, deep research, code execution, multi-modal file analysis, and search-grounded answers, all from one API key.
 
 [Quickstart](#quickstart) · [Features](#features) · [Model selection](#model-selection) · [Examples](#usage-examples) · [Limits](#known-limitations)
 
@@ -47,7 +47,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 ## At a glance
 
 <p align="center">
-  <img src="assets/infographic.png" alt="gemini-mcp infographic: 10 MCP tools across Gemini, Imagen, and Veo model families" width="900" />
+  <img src="assets/infographic.png" alt="gemini-mcp v0.2.0 infographic: 13 MCP tools across Gemini, Imagen, Veo, Lyria, TTS, and Deep Research" width="900" />
 </p>
 
 ## Architecture overview
