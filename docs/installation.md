@@ -31,11 +31,34 @@ uvx --from git+https://github.com/azmym/gemini-mcp@v0.1.0 gemini-mcp
 
 ### Upgrading
 
-Force `uvx` to refetch the latest `main`:
+Force `uvx` to refetch the latest commit from `main`:
 
 ```bash
 uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
 ```
+
+Then restart Claude Code to pick up the new version.
+
+To pin to a specific release instead of tracking `main`, re-register the server with the tag appended:
+
+```bash
+claude mcp remove gemini -s user
+claude mcp add gemini -s user \
+  -e GEMINI_API_KEY=<your-key> \
+  -- uvx --from git+https://github.com/azmym/gemini-mcp@v0.2.0 gemini-mcp
+```
+
+### Upgrading from v0.1.x to v0.2.0
+
+v0.2.0 changes the built-in default model for every tool. If any of your workflows relied on the old defaults (e.g. `gemini-2.5-pro` for text generation or `veo-3.0-generate-001` for video), read [docs/migration-v0.2.md](migration-v0.2.md) for the full list and per-tool pin recipes before upgrading.
+
+The upgrade itself is a one-liner:
+
+```bash
+uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
+```
+
+Then restart Claude Code.
 
 ## Option B: run from a local clone
 

@@ -106,7 +106,7 @@ On first invocation `uvx` clones the repo and installs `fastmcp` and `google-gen
 uvx --from git+https://github.com/azmym/gemini-mcp --refresh gemini-mcp --help
 ```
 
-You can also pin to a specific tag or commit by appending `@<ref>`, for example `git+https://github.com/azmym/gemini-mcp@v0.1.0`.
+You can also pin to a specific tag or commit by appending `@<ref>`, for example `git+https://github.com/azmym/gemini-mcp@v0.2.0`. If upgrading from v0.1.x, check the [migration guide](docs/migration-v0.2.md) first — v0.2.0 changes the built-in default model for every tool.
 
 <details>
 <summary><b>Option B: run from a local clone (best for development)</b></summary>
