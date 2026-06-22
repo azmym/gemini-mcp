@@ -494,7 +494,7 @@ def gemini_start_video(
 ) -> dict[str, Any]:
     """Start a Veo video generation. Returns an operation_id to poll with gemini_get_video.
 
-    Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.
+    Aspect ratio is "16:9" or "9:16". Duration is 4 to 8 seconds for Veo 3.1.
     When image_path is set, runs image-to-video mode.
     """
     chosen = _resolve_model(model, "veo-3.1-generate-preview")

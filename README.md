@@ -39,7 +39,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 
 ## Why use this?
 
-- **One MCP server, three Google model families.** Gemini 2.5/3 for text and multi-modal, Imagen 4 for high-quality images, Veo 3 for video, all behind a single API key.
+- **One MCP server, three Google model families.** Gemini 2.5/3 for text and multi-modal, Imagen 4 for high-quality images, Veo 3.1 for video, all behind a single API key.
 - **Google AI Studio only.** No Vertex AI account, no service accounts, no GCP project setup. One key and you're done.
 - **Async video built in.** Veo generations run as long-running operations so the stdio server never blocks for minutes.
 - **Model swapping per call.** Every tool accepts a `model` argument, so you can mix `gemini-2.5-flash` for quick answers with `gemini-3.1-pro-preview` for heavy reasoning in the same session.
