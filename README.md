@@ -47,7 +47,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 ## At a glance
 
 <p align="center">
-  <img src="assets/infographic.png" alt="gemini-mcp v0.2.0 infographic: 13 MCP tools across Gemini, Imagen, Veo, Lyria, TTS, and Deep Research" width="900" />
+  <img src="assets/infographic.png" alt="gemini-mcp v0.2.1 infographic: 13 MCP tools across Gemini (Imagen deprecated), Veo, Lyria, TTS, and Deep Research" width="900" />
 </p>
 
 ## Architecture overview

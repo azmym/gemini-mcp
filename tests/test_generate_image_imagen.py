@@ -5,6 +5,8 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
+import pytest
+
 
 def _fake_image_response(num_images: int = 1) -> SimpleNamespace:
     png_bytes = b"\x89PNG\r\n\x1a\n" + b"\x00" * 32
@@ -186,3 +188,42 @@ def test_imagen_non_imagen_model_is_honored(
     assert result["model"] == "gemini-3-pro-image-preview"
     call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
     assert call_kwargs["model"] == "gemini-3-pro-image-preview"
+
+
+def test_imagen_env_var_imagen_id_is_redirected(
+    tmp_path: Path, mock_genai_client: MagicMock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    """GEMINI_DEFAULT_MODEL=imagen-4.0-* must still be redirected to flash-image."""
+    monkeypatch.setenv("GEMINI_DEFAULT_MODEL", "imagen-4.0-generate-001")
+    mock_genai_client.models.generate_content.return_value = _fake_image_response(num_images=1)
+
+    import server
+
+    result = server.gemini_generate_image_imagen.fn(
+        prompt="hi",
+        output_dir=str(tmp_path),
+        count=1,
+    )
+
+    assert result["model"] == "gemini-3.1-flash-image-preview"
+    call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
+    assert call_kwargs["model"] == "gemini-3.1-flash-image-preview"
+
+
+def test_imagen_rejects_bad_aspect_ratio(
+    tmp_path: Path, mock_genai_client: MagicMock
+) -> None:
+    """Aspect ratios not in the allowed set must be rejected before any API call."""
+    import server
+
+    result = server.gemini_generate_image_imagen.fn(
+        prompt="hi",
+        output_dir=str(tmp_path),
+        count=1,
+        aspect_ratio="invalid; injected text",
+    )
+
+    assert "error" in result
+    assert "aspect_ratio" in result["error"]
+    assert result["deprecated"] is True
+    mock_genai_client.models.generate_content.assert_not_called()

@@ -24,6 +24,8 @@ _research_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
 _research_executor: concurrent.futures.ThreadPoolExecutor | None = None
 
+_ALLOWED_ASPECT_RATIOS: frozenset[str] = frozenset({"1:1", "16:9", "9:16", "4:3", "3:4"})
+
 
 def _ensure_research_executor() -> concurrent.futures.ThreadPoolExecutor:
     """Lazy-init thread pool for Deep Research synchronous calls.
@@ -190,9 +192,17 @@ def gemini_generate_image_imagen(
     # honor any other explicit model (and GEMINI_DEFAULT_MODEL) as before.
     effective = None if (model is None or model.startswith("imagen-")) else model
     chosen = _resolve_model(effective, "gemini-3.1-flash-image-preview")
+    if chosen.startswith("imagen-"):
+        chosen = "gemini-3.1-flash-image-preview"
     if count < 1 or count > 4:
         return {
             "error": "count must be between 1 and 4",
+            "model": chosen,
+            "deprecated": True,
+        }
+    if aspect_ratio not in _ALLOWED_ASPECT_RATIOS:
+        return {
+            "error": f"aspect_ratio must be one of: {', '.join(sorted(_ALLOWED_ASPECT_RATIOS))}",
             "model": chosen,
             "deprecated": True,
         }
