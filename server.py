@@ -172,44 +172,72 @@ def gemini_generate_image_imagen(
     aspect_ratio: str = "1:1",
     model: str | None = None,
 ) -> dict[str, Any]:
-    """Generate images with Imagen 4 (text-to-image, PNG output).
+    """DEPRECATED: generate images via the Gemini flash-image path.
 
-    Uses `client.models.generate_images()`. Supported aspect ratios:
-    "1:1", "16:9", "9:16", "4:3", "3:4". Count must be 1 to 4.
+    The Imagen 4 model IDs this tool used (imagen-4.0-*) are discontinued by
+    Google on 2026-08-17 and return 404 after that date. This tool now
+    redirects to gemini-3.1-flash-image-preview (the same path as
+    gemini_generate_image). Imagen-only knobs are translated: aspect_ratio is
+    appended to the prompt as an instruction; count maps to candidate_count.
+    Prefer gemini_generate_image for new code.
     """
-    chosen = _resolve_model(model, "imagen-4.0-ultra-generate-001")
+    deprecation = (
+        "gemini_generate_image_imagen is deprecated; Imagen 4 models sunset "
+        "2026-08-17. This call was served by gemini-3.1-flash-image-preview. "
+        "Use gemini_generate_image."
+    )
+    # Redirect the no-model default and any imagen-* pin to flash-image;
+    # honor any other explicit model (and GEMINI_DEFAULT_MODEL) as before.
+    effective = None if (model is None or model.startswith("imagen-")) else model
+    chosen = _resolve_model(effective, "gemini-3.1-flash-image-preview")
     if count < 1 or count > 4:
-        return {"error": "count must be between 1 and 4", "model": chosen}
+        return {
+            "error": "count must be between 1 and 4",
+            "model": chosen,
+            "deprecated": True,
+        }
     try:
         client = _ensure_client()
         out_path = Path(output_dir).expanduser().resolve()
         out_path.mkdir(parents=True, exist_ok=True)
 
-        config = genai_types.GenerateImagesConfig(
-            number_of_images=count,
-            aspect_ratio=aspect_ratio,
-            output_mime_type="image/png",
+        contents = prompt
+        if aspect_ratio != "1:1":
+            contents = (
+                f"{prompt}\n\nGenerate the image with a "
+                f"{aspect_ratio} aspect ratio."
+            )
+
+        config = genai_types.GenerateContentConfig(
+            response_modalities=["IMAGE"],
+            candidate_count=count,
         )
-        response = client.models.generate_images(
+        response = client.models.generate_content(
             model=chosen,
-            prompt=prompt,
+            contents=contents,
             config=config,
         )
 
         paths: list[str] = []
         stamp = int(time.time())
-        for generated in response.generated_images or []:
-            data = getattr(getattr(generated, "image", None), "image_bytes", None)
-            if not data:
-                continue
-            fname = f"imagen-{stamp}-{uuid.uuid4().hex[:8]}.png"
-            fpath = out_path / fname
-            fpath.write_bytes(data)
-            paths.append(str(fpath))
+        for candidate in response.candidates or []:
+            for part in getattr(candidate.content, "parts", []) or []:
+                inline = getattr(part, "inline_data", None)
+                if inline is None or not inline.data:
+                    continue
+                fname = f"imagen-{stamp}-{uuid.uuid4().hex[:8]}.png"
+                fpath = out_path / fname
+                fpath.write_bytes(inline.data)
+                paths.append(str(fpath))
 
-        return {"paths": paths, "model": chosen}
+        return {
+            "paths": paths,
+            "model": chosen,
+            "deprecated": True,
+            "deprecation": deprecation,
+        }
     except Exception as exc:  # noqa: BLE001
-        return {"error": str(exc), "model": chosen}
+        return {"error": str(exc), "model": chosen, "deprecated": True}
 
 
 @mcp.tool()
