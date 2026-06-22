@@ -127,7 +127,7 @@ gemini_generate_image_imagen(
 ) -> dict
 ```
 
-Image generation with Imagen 4 (text-to-image, PNG output).
+**DEPRECATED.** The Imagen 4 model IDs this tool used sunset on 2026-08-17 (404 after). It now redirects to the Gemini flash-image path (`gemini-3.1-flash-image-preview`). Use `gemini_generate_image` for new code.
 
 **Parameters:**
 
@@ -137,24 +137,26 @@ Image generation with Imagen 4 (text-to-image, PNG output).
 | `output_dir` | str | `/tmp/gemini-images` | Created if missing |
 | `count` | int | 1 | Must be 1 to 4 inclusive |
 | `aspect_ratio` | str | `"1:1"` | One of: `"1:1"`, `"16:9"`, `"9:16"`, `"4:3"`, `"3:4"` |
-| `model` | str\|None | None | Resolves to `imagen-4.0-ultra-generate-001` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image-preview`; `imagen-4.0-*` IDs are redirected to it |
 
 **Success response:**
 
 ```json
 {
   "paths": ["/tmp/gemini-images/imagen-1776443000-ab12cd34.png"],
-  "model": "imagen-4.0-ultra-generate-001"
+  "model": "gemini-3.1-flash-image-preview",
+  "deprecated": true,
+  "deprecation": "gemini_generate_image_imagen is deprecated; Imagen 4 models sunset 2026-08-17. This call was served by gemini-3.1-flash-image-preview. Use gemini_generate_image."
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "count must be between 1 and 4", "model": "imagen-4.0-ultra-generate-001"}
+{"error": "count must be between 1 and 4", "model": "gemini-3.1-flash-image-preview", "deprecated": true}
 ```
 
-**Notes:** Imagen 4 uses a different SDK entry point (`client.models.generate_images`) from `gemini_generate_image`.
+**Notes:** This tool no longer calls Imagen. `aspect_ratio` is translated into a prompt instruction (the flash-image path has no aspect-ratio config knob), and `count` maps to `candidate_count`. Aspect ratio is therefore prompt-steered, not a hard crop.
 
 ---
 
