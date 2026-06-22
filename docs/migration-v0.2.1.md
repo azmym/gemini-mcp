@@ -20,6 +20,7 @@ After that date, calls to these IDs return `404 Not Found`. There is no survivin
 - An explicit non-Imagen model ID is still honored, and `GEMINI_DEFAULT_MODEL` still applies.
 - `aspect_ratio` is translated into a prompt instruction (the flash-image path has no aspect-ratio config field), so it is prompt-steered rather than a hard crop.
 - `count` maps to `candidate_count`; the behavior is identical to `gemini_generate_image`.
+- Output filenames retain the `imagen-` prefix for backward compatibility with consumers that glob on existing paths.
 - Every response carries `"deprecated": true` plus a `"deprecation"` message, and `"model"` reports the actual model used.
 
 No call to this tool returns a 404 from the sunset, because Imagen is never called.

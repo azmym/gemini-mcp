@@ -188,10 +188,12 @@ def gemini_generate_image_imagen(
         "2026-08-17. This call was served by gemini-3.1-flash-image-preview. "
         "Use gemini_generate_image."
     )
-    # Redirect the no-model default and any imagen-* pin to flash-image;
+    # Redirect the no-model default and any explicit imagen-* pin to flash-image;
     # honor any other explicit model (and GEMINI_DEFAULT_MODEL) as before.
     effective = None if (model is None or model.startswith("imagen-")) else model
     chosen = _resolve_model(effective, "gemini-3.1-flash-image-preview")
+    # Post-resolve guard: GEMINI_DEFAULT_MODEL may itself be set to an imagen-*
+    # ID, which the pre-resolve nullification above cannot catch.
     if chosen.startswith("imagen-"):
         chosen = "gemini-3.1-flash-image-preview"
     if count < 1 or count > 4:
