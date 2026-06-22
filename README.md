@@ -39,7 +39,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 
 ## Why use this?
 
-- **One MCP server, three Google model families.** Gemini 2.5/3 for text and multi-modal, Imagen 4 for high-quality images, Veo 3.1 for video, all behind a single API key.
+- **One MCP server, three Google model families.** Gemini 2.5/3 for text, multi-modal, and image generation, Veo 3.1 for video, all behind a single API key.
 - **Google AI Studio only.** No Vertex AI account, no service accounts, no GCP project setup. One key and you're done.
 - **Async video built in.** Veo generations run as long-running operations so the stdio server never blocks for minutes.
 - **Model swapping per call.** Every tool accepts a `model` argument, so you can mix `gemini-2.5-flash` for quick answers with `gemini-3.1-pro-preview` for heavy reasoning in the same session.
@@ -47,7 +47,7 @@ That's it. Ask Claude Code to "list available Gemini models" and you're off.
 ## At a glance
 
 <p align="center">
-  <img src="assets/infographic.png" alt="gemini-mcp v0.2.0 infographic: 13 MCP tools across Gemini, Imagen, Veo, Lyria, TTS, and Deep Research" width="900" />
+  <img src="assets/infographic.png" alt="gemini-mcp v0.2.1 infographic: 13 MCP tools across Gemini (Imagen deprecated), Veo, Lyria, TTS, and Deep Research" width="900" />
 </p>
 
 ## Architecture overview
@@ -71,7 +71,7 @@ https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architec
 | `gemini_search_grounded` | `gemini-3.5-flash` | Text generation grounded with Google Search; returns answer and citations |
 | `gemini_analyze_file` | `gemini-3.1-pro-preview` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
 | `gemini_chat` | `gemini-3.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
-| `gemini_generate_image_imagen` | `imagen-4.0-ultra-generate-001` | Image generation with Imagen 4; writes PNG files to a local output directory |
+| `gemini_generate_image_imagen` | `gemini-3.1-flash-image-preview` | DEPRECATED (Imagen 4 sunsets 2026-08-17): redirects to the flash-image path; use `gemini_generate_image` instead |
 | `gemini_start_video` | `veo-3.1-generate-preview` | Kicks off a Veo video generation; returns an `operation_id` for polling |
 | `gemini_get_video` | n/a | Polls a Veo operation started by `gemini_start_video`; writes the MP4 when done |
 | `gemini_generate_music` | `lyria-3-pro-preview` | Generate music from a text prompt (Lyria 3) |
@@ -194,7 +194,7 @@ Tool: gemini_list_models
 | Stable reasoning (no preview) | `gemini-2.5-pro` |
 | Stable native image generation (Nano Banana) | `gemini-2.5-flash-image` |
 | Latest native image generation (Nano Banana 2 / Pro) | `gemini-3.1-flash-image-preview` (default) or `gemini-3-pro-image-preview` |
-| High-quality Imagen image generation | `imagen-4.0-ultra-generate-001` (default), `imagen-4.0-generate-001`, `imagen-4.0-fast-generate-001` |
+| Imagen image generation (DEPRECATED, sunsets 2026-08-17) | redirects to `gemini-3.1-flash-image-preview`; use `gemini_generate_image` |
 | Video generation (Veo) | `veo-3.1-generate-preview` (default), `veo-3.1-fast-generate-preview`, `veo-3.1-lite-generate-preview` |
 | Music generation (Lyria) | `lyria-3-pro-preview` (default) or `lyria-3-clip-preview` |
 | Text-to-speech | `gemini-3.1-flash-tts-preview` (default) |
@@ -336,7 +336,7 @@ Call `gemini_list_models` to retrieve the full list of models your API key can a
 Tool: gemini_list_models
 ```
 
-The server can use any model string accepted by the Google AI Studio API. At the time of writing, this includes Gemini 3.x preview models (such as `gemini-3.1-pro-preview`), Imagen 4 for image generation, Veo 3.1 for video generation, Lyria 3 for music, Gemini 3.1 TTS for speech synthesis, and Deep Research for long-form synthesis. Pass the model name explicitly in any tool call to use a non-default model.
+The server can use any model string accepted by the Google AI Studio API. At the time of writing, this includes Gemini 3.x preview models (such as `gemini-3.1-pro-preview`), Gemini flash-image for image generation, Veo 3.1 for video generation, Lyria 3 for music, Gemini 3.1 TTS for speech synthesis, and Deep Research for long-form synthesis. Pass the model name explicitly in any tool call to use a non-default model. (Imagen 4 model IDs are discontinued on 2026-08-17.)
 
 ## Development
 

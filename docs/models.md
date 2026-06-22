@@ -21,7 +21,7 @@ The response lists every model your API key can access, along with supported act
 | Stable reasoning (no preview) | `gemini-2.5-pro` |
 | Stable native image generation | `gemini-2.5-flash-image` |
 | Latest native image generation | `gemini-3.1-flash-image-preview` (default) or `gemini-3-pro-image-preview` |
-| High-quality Imagen image generation | `imagen-4.0-ultra-generate-001` (default), `imagen-4.0-generate-001` (standard), `imagen-4.0-fast-generate-001` (quickest) |
+| Imagen image generation (DEPRECATED) | Imagen 4 IDs sunset 2026-08-17; `gemini_generate_image_imagen` now redirects to `gemini-3.1-flash-image-preview`. Use `gemini_generate_image`. |
 | Video generation (Veo) | `veo-3.1-generate-preview` (default), `veo-3.1-fast-generate-preview`, `veo-3.1-lite-generate-preview` |
 | Music generation (Lyria) | `lyria-3-pro-preview` (default) or `lyria-3-clip-preview` |
 | Text-to-speech | `gemini-3.1-flash-tts-preview` (default) |
