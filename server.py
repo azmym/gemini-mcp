@@ -126,7 +126,7 @@ def gemini_generate_image(
 
     Writes PNG files to `output_dir` and returns their absolute paths.
     """
-    chosen = _resolve_model(model, "gemini-3.1-flash-image-preview")
+    chosen = _resolve_model(model, "gemini-3.1-flash-image")
     try:
         client = _ensure_client()
         out_path = Path(output_dir).expanduser().resolve()
@@ -171,24 +171,24 @@ def gemini_generate_image_imagen(
 
     The Imagen 4 model IDs this tool used (imagen-4.0-*) are discontinued by
     Google on 2026-08-17 and return 404 after that date. This tool now
-    redirects to gemini-3.1-flash-image-preview (the same path as
+    redirects to gemini-3.1-flash-image (the same path as
     gemini_generate_image). Imagen-only knobs are translated: aspect_ratio is
     appended to the prompt as an instruction; count maps to candidate_count.
     Prefer gemini_generate_image for new code.
     """
     deprecation = (
         "gemini_generate_image_imagen is deprecated; Imagen 4 models sunset "
-        "2026-08-17. This call was served by gemini-3.1-flash-image-preview. "
+        "2026-08-17. This call was served by gemini-3.1-flash-image. "
         "Use gemini_generate_image."
     )
     # Redirect the no-model default and any explicit imagen-* pin to flash-image;
     # honor any other explicit model (and GEMINI_DEFAULT_MODEL) as before.
     effective = None if (model is None or model.startswith("imagen-")) else model
-    chosen = _resolve_model(effective, "gemini-3.1-flash-image-preview")
+    chosen = _resolve_model(effective, "gemini-3.1-flash-image")
     # Post-resolve guard: GEMINI_DEFAULT_MODEL may itself be set to an imagen-*
     # ID, which the pre-resolve nullification above cannot catch.
     if chosen.startswith("imagen-"):
-        chosen = "gemini-3.1-flash-image-preview"
+        chosen = "gemini-3.1-flash-image"
     if count < 1 or count > 4:
         return {
             "error": "count must be between 1 and 4",
@@ -425,7 +425,7 @@ def gemini_search_grounded(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Text generation grounded with Google Search. Returns answer and citations."""
-    chosen = _resolve_model(model, "gemini-3.5-flash")
+    chosen = _resolve_model(model, "gemini-3.7-flash")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -496,7 +496,7 @@ def gemini_chat(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
-    chosen = _resolve_model(model, "gemini-3.5-flash")
+    chosen = _resolve_model(model, "gemini-3.7-flash")
     try:
         client = _ensure_client()
         session = _sessions.get(session_id)

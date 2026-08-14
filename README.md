@@ -66,12 +66,12 @@ https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architec
 |---|---|---|
 | `gemini_list_models` | n/a | Lists available Gemini models with capabilities and token limits |
 | `gemini_generate` | `gemini-3.1-pro-preview` | Single-turn text generation with optional system prompt and sampling controls |
-| `gemini_generate_image` | `gemini-3.1-flash-image-preview` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
+| `gemini_generate_image` | `gemini-3.1-flash-image` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
 | `gemini_code_execute` | `gemini-3.1-pro-preview-customtools` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
-| `gemini_search_grounded` | `gemini-3.5-flash` | Text generation grounded with Google Search; returns answer and citations |
+| `gemini_search_grounded` | `gemini-3.7-flash` | Text generation grounded with Google Search; returns answer and citations |
 | `gemini_analyze_file` | `gemini-3.1-pro-preview` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
-| `gemini_chat` | `gemini-3.5-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
-| `gemini_generate_image_imagen` | `gemini-3.1-flash-image-preview` | DEPRECATED (Imagen 4 sunsets 2026-08-17): redirects to the flash-image path; use `gemini_generate_image` instead |
+| `gemini_chat` | `gemini-3.7-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
+| `gemini_generate_image_imagen` | `gemini-3.1-flash-image` | DEPRECATED (Imagen 4 sunsets 2026-08-17): redirects to the flash-image path; use `gemini_generate_image` instead |
 | `gemini_start_video` | `veo-3.1-generate-preview` | Kicks off a Veo video generation; returns an `operation_id` for polling |
 | `gemini_get_video` | n/a | Polls a Veo operation started by `gemini_start_video`; writes the MP4 when done |
 | `gemini_generate_music` | `lyria-3-pro-preview` | Generate music from a text prompt (Lyria 3) |
@@ -176,7 +176,7 @@ Tool: gemini_generate
 ```text
 Tool: gemini_generate_image
   prompt: "Product photo of a wireless headset on a studio backdrop"
-  model: "gemini-3-pro-image-preview"
+  model: "gemini-3-pro-image"
 ```
 
 Call `gemini_list_models` to see every model your API key can access:
@@ -189,17 +189,17 @@ Tool: gemini_list_models
 
 | Goal | Model |
 |---|---|
-| Fast, cheap chat or short answers | `gemini-3.5-flash` |
+| Fast, cheap chat or short answers | `gemini-3.7-flash` |
 | Strongest reasoning, code, analysis | `gemini-3.1-pro-preview` |
 | Stable reasoning (no preview) | `gemini-2.5-pro` |
 | Stable native image generation (Nano Banana) | `gemini-2.5-flash-image` |
-| Latest native image generation (Nano Banana 2 / Pro) | `gemini-3.1-flash-image-preview` (default) or `gemini-3-pro-image-preview` |
-| Imagen image generation (DEPRECATED, sunsets 2026-08-17) | redirects to `gemini-3.1-flash-image-preview`; use `gemini_generate_image` |
+| Latest native image generation (Nano Banana 2 / Pro) | `gemini-3.1-flash-image` (default) or `gemini-3-pro-image` |
+| Imagen image generation (DEPRECATED, sunsets 2026-08-17) | redirects to `gemini-3.1-flash-image`; use `gemini_generate_image` |
 | Video generation (Veo) | `veo-3.1-generate-preview` (default), `veo-3.1-fast-generate-preview`, `veo-3.1-lite-generate-preview` |
 | Music generation (Lyria) | `lyria-3-pro-preview` (default) or `lyria-3-clip-preview` |
 | Text-to-speech | `gemini-3.1-flash-tts-preview` (default) |
 | Deep Research | `deep-research-max-preview-04-2026` (default) or `deep-research-pro-preview-12-2025` |
-| Grounded answers with citations | `gemini-3.5-flash` |
+| Grounded answers with citations | `gemini-3.7-flash` |
 
 Preview models can change behavior or availability without notice. Stick to the stable models for workflows you rely on; use previews for experimentation.
 
@@ -262,7 +262,7 @@ Example response:
     "/tmp/gemini-images/gemini-1713380000-e5f6a7b8.png",
     "/tmp/gemini-images/gemini-1713380000-c9d0e1f2.png"
   ],
-  "model": "gemini-3.1-flash-image-preview"
+  "model": "gemini-3.1-flash-image"
 }
 ```
 
@@ -284,7 +284,7 @@ Example response:
     {"url": "https://www.python.org/downloads/", "title": "Download Python"},
     {"url": "https://docs.python.org/3/whatsnew/3.13.html", "title": "What's New in Python 3.13"}
   ],
-  "model": "gemini-3.5-flash"
+  "model": "gemini-3.7-flash"
 }
 ```
 

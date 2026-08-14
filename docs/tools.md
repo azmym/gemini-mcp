@@ -86,7 +86,7 @@ gemini_generate_image(
 ) -> dict
 ```
 
-Native Gemini image generation. Writes PNG files to `output_dir` and returns absolute paths. Powered by Gemini's Nano Banana models. Pass `model="gemini-3-pro-image-preview"` for Nano Banana Pro.
+Native Gemini image generation. Writes PNG files to `output_dir` and returns absolute paths. Powered by Gemini's Nano Banana models. Pass `model="gemini-3-pro-image"` for Nano Banana Pro.
 
 **Parameters:**
 
@@ -95,21 +95,21 @@ Native Gemini image generation. Writes PNG files to `output_dir` and returns abs
 | `prompt` | str | required | Text description |
 | `output_dir` | str | `/tmp/gemini-images` | Created if missing |
 | `count` | int | 1 | Number of candidates |
-| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image-preview` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image` when unset |
 
 **Success response:**
 
 ```json
 {
   "paths": ["/tmp/gemini-images/gemini-1713380000-a1b2c3d4.png"],
-  "model": "gemini-3.1-flash-image-preview"
+  "model": "gemini-3.1-flash-image"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-3.1-flash-image-preview"}
+{"error": "<message>", "model": "gemini-3.1-flash-image"}
 ```
 
 ---
@@ -127,7 +127,7 @@ gemini_generate_image_imagen(
 ) -> dict
 ```
 
-**DEPRECATED.** The Imagen 4 model IDs this tool used sunset on 2026-08-17 (404 after). It now redirects to the Gemini flash-image path (`gemini-3.1-flash-image-preview`). Use `gemini_generate_image` for new code.
+**DEPRECATED.** The Imagen 4 model IDs this tool used sunset on 2026-08-17 (404 after). It now redirects to the Gemini flash-image path (`gemini-3.1-flash-image`). Use `gemini_generate_image` for new code.
 
 **Parameters:**
 
@@ -137,23 +137,23 @@ gemini_generate_image_imagen(
 | `output_dir` | str | `/tmp/gemini-images` | Created if missing |
 | `count` | int | 1 | Must be 1 to 4 inclusive |
 | `aspect_ratio` | str | `"1:1"` | One of: `"1:1"`, `"16:9"`, `"9:16"`, `"4:3"`, `"3:4"` |
-| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image-preview`; `imagen-4.0-*` IDs are redirected to it |
+| `model` | str\|None | None | Resolves to `gemini-3.1-flash-image`; `imagen-4.0-*` IDs are redirected to it |
 
 **Success response:**
 
 ```json
 {
   "paths": ["/tmp/gemini-images/imagen-1776443000-ab12cd34.png"],
-  "model": "gemini-3.1-flash-image-preview",
+  "model": "gemini-3.1-flash-image",
   "deprecated": true,
-  "deprecation": "gemini_generate_image_imagen is deprecated; Imagen 4 models sunset 2026-08-17. This call was served by gemini-3.1-flash-image-preview. Use gemini_generate_image."
+  "deprecation": "gemini_generate_image_imagen is deprecated; Imagen 4 models sunset 2026-08-17. This call was served by gemini-3.1-flash-image. Use gemini_generate_image."
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "count must be between 1 and 4", "model": "gemini-3.1-flash-image-preview", "deprecated": true}
+{"error": "count must be between 1 and 4", "model": "gemini-3.1-flash-image", "deprecated": true}
 ```
 
 **Notes:** This tool no longer calls Imagen. `aspect_ratio` is translated into a prompt instruction (the flash-image path has no aspect-ratio config knob), and `count` maps to `candidate_count`. Aspect ratio is therefore prompt-steered, not a hard crop.
@@ -209,7 +209,7 @@ Text generation grounded with Google Search. Returns answer plus source citation
 | Param | Type | Default | Notes |
 |---|---|---|---|
 | `prompt` | str | required | Question |
-| `model` | str\|None | None | Resolves to `gemini-3.5-flash` when unset |
+| `model` | str\|None | None | Resolves to `gemini-3.7-flash` when unset |
 
 **Success response:**
 
@@ -219,14 +219,14 @@ Text generation grounded with Google Search. Returns answer plus source citation
   "citations": [
     {"url": "https://example.com/a", "title": "Example A"}
   ],
-  "model": "gemini-3.5-flash"
+  "model": "gemini-3.7-flash"
 }
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-3.5-flash"}
+{"error": "<message>", "model": "gemini-3.7-flash"}
 ```
 
 ---
@@ -293,18 +293,18 @@ Multi-turn chat keyed by `session_id`. State is held in memory for the server li
 | `session_id` | str | required | Arbitrary caller-chosen string; identifies the chat |
 | `message` | str | required | Next user message |
 | `system_instruction` | str\|None | None | Applied only on first turn; ignored on subsequent calls |
-| `model` | str\|None | None | Resolves to `gemini-3.5-flash` when unset; only used when creating a new session |
+| `model` | str\|None | None | Resolves to `gemini-3.7-flash` when unset; only used when creating a new session |
 
 **Success response:**
 
 ```json
-{"response": "<reply>", "turn": 3, "model": "gemini-3.5-flash"}
+{"response": "<reply>", "turn": 3, "model": "gemini-3.7-flash"}
 ```
 
 **Error response:**
 
 ```json
-{"error": "<message>", "model": "gemini-3.5-flash"}
+{"error": "<message>", "model": "gemini-3.7-flash"}
 ```
 
 **Notes:** Sessions do not persist across server restarts. There is no way to list or delete sessions; they live until the process exits.

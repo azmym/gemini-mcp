@@ -74,4 +74,4 @@ def test_chat_wraps_errors(
 
     result = server.gemini_chat.fn(session_id="s4", message="hi")
 
-    assert result == {"error": "chat down", "model": "gemini-3.5-flash"}
+    assert result == {"error": "chat down", "model": "gemini-3.7-flash"}
