@@ -508,6 +508,8 @@ gemini_start_research(
 
 Starts a Deep Research synthesis. Returns an `operation_id` to poll with `gemini_get_research_report`. Long-running operation; expect minutes, not seconds.
 
+Deep Research runs on the Interactions API, not `generateContent`. The model IDs are *agents*: the server sends them in the `agent` field with `background=True`, because calling `generateContent` on them returns `400 This model only supports Interactions API`. This requires `google-genai>=2.0.0`.
+
 **Parameters:**
 
 | Param | Type | Default | Notes |
@@ -531,7 +533,7 @@ Starts a Deep Research synthesis. Returns an `operation_id` to poll with `gemini
 {"error": "<message>", "model": "deep-research-max-preview-04-2026"}
 ```
 
-**Notes:** `operation_id` is invalidated when the server process restarts.
+**Notes:** `operation_id` is the API-side interaction ID, so it stays valid across a server restart.
 
 ---
 
@@ -578,6 +580,3 @@ Polls a Deep Research operation. When done, writes the report markdown to disk a
 {"status": "error", "error": "<message>", "operation_id": "a1b2c3d4e5f6"}
 ```
 
-```json
-{"status": "unknown", "error": "operation_id not found"}
-```
