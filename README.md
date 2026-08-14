@@ -69,7 +69,7 @@ https://github.com/azmym/gemini-mcp/releases/download/v0.1.0/gemini-mcp-architec
 | `gemini_generate_image` | `gemini-3.1-flash-image` | Native image generation with Gemini Nano Banana; writes PNG files to a local output directory |
 | `gemini_code_execute` | `gemini-3.1-pro-preview-customtools` | Gemini writes and runs Python in its sandbox; returns answer, code, and stdout |
 | `gemini_search_grounded` | `gemini-3.7-flash` | Text generation grounded with Google Search; returns answer and citations |
-| `gemini_analyze_file` | `gemini-3.1-pro-preview` | Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it |
+| `gemini_analyze_file` | `gemini-3.1-pro-preview` | Sends a local file (PDF, image, audio, video) to Gemini and answers a question about it; inline under 15MB, Files API above |
 | `gemini_chat` | `gemini-3.7-flash` | Multi-turn chat keyed by `session_id`; state is held in memory for the server lifetime |
 | `gemini_generate_image_imagen` | `gemini-3.1-flash-image` | DEPRECATED (Imagen 4 sunsets 2026-08-17): redirects to the flash-image path; use `gemini_generate_image` instead |
 | `gemini_start_video` | `veo-3.1-generate-preview` | Kicks off a Veo video generation; returns an `operation_id` for polling |
@@ -235,12 +235,15 @@ Example response:
 ```json
 {
   "answer": "1. Revenue grew 18% year-on-year...\n2. Operational costs declined...\n3. Outlook for next quarter...",
-  "file_uri": "files/abc123",
+  "file_uri": "",
+  "inline": true,
   "model": "gemini-2.5-pro"
 }
 ```
 
-Files uploaded via the Files API expire automatically on Google's servers after 48 hours.
+Files at or under 15MB are sent inline as bytes, so nothing is stored on Google's servers and `file_uri` is empty. Larger files fall back to the Files API, where `inline` is `false`, `file_uri` holds the resource name, and the upload expires automatically after 48 hours.
+
+Gemini 3.x models reject Files API references with `403 PERMISSION_DENIED`, so files above the inline limit need a `gemini-2.5-*` model passed explicitly.
 
 ### Generate image variations
 
