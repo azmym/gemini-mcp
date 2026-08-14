@@ -242,7 +242,9 @@ gemini_analyze_file(
 ) -> dict
 ```
 
-Uploads a local file (PDF, image, audio, video) via the Files API and answers a question about it.
+Sends a local file (PDF, image, audio, video) to Gemini and answers a question about it.
+
+Files at or under 15MB are sent inline as bytes. Larger files fall back to the Files API. This matters because Gemini 3.x models reject Files API references with `403 PERMISSION_DENIED`, so a file over 15MB needs a `gemini-2.5-*` model passed explicitly.
 
 **Parameters:**
 
@@ -257,10 +259,13 @@ Uploads a local file (PDF, image, audio, video) via the Files API and answers a 
 ```json
 {
   "answer": "<answer>",
-  "file_uri": "files/abc123",
+  "file_uri": "",
+  "inline": true,
   "model": "gemini-3.1-pro-preview"
 }
 ```
+
+`inline` reports which path served the call. When it is `false` the file went through the Files API and `file_uri` holds the resource name (`files/abc123`); when `true`, `file_uri` is empty because no upload happened.
 
 **Error response:**
 
@@ -268,7 +273,7 @@ Uploads a local file (PDF, image, audio, video) via the Files API and answers a 
 {"error": "File not found: /bad/path", "model": "gemini-3.1-pro-preview"}
 ```
 
-**Notes:** Files uploaded to the Files API expire on Google's servers after 48 hours.
+**Notes:** Files uploaded to the Files API expire on Google's servers after 48 hours. Inline files are not stored at all.
 
 ---
 

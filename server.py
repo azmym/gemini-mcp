@@ -5,6 +5,7 @@ Run with: uvx --from "fastmcp[cli]" fastmcp run server.py
 """
 from __future__ import annotations
 
+import mimetypes
 import os
 import re
 import time
@@ -23,6 +24,16 @@ _video_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
 
 _ALLOWED_ASPECT_RATIOS: frozenset[str] = frozenset({"1:1", "16:9", "9:16", "4:3", "3:4"})
+
+# Gemini 3.x models reject Files API references with 403 PERMISSION_DENIED
+# ("The caller does not have permission") even for a file the same key just
+# uploaded successfully; only gemini-2.5-* accepts them. Inline bytes work on
+# every model, so gemini_analyze_file inlines by default and only falls back to
+# the Files API for payloads too large to inline.
+# The API's own inline request ceiling is 20MB; 15MB leaves room for the prompt
+# and encoding overhead. Verified inline at 5MB; an 18MB text payload fails on
+# the 1,048,576-token context limit rather than on request size.
+_INLINE_MAX_BYTES: int = 15 * 1024 * 1024
 
 # Interaction states that mean "not finished yet" (see InteractionStatus in the
 # google-genai SDK). Anything else that is not "completed" is terminal-bad.
@@ -466,7 +477,12 @@ def gemini_analyze_file(
     prompt: str,
     model: str | None = None,
 ) -> dict[str, Any]:
-    """Upload a local file (PDF, image, audio, video) and ask Gemini about it."""
+    """Send a local file (PDF, image, audio, video) to Gemini and ask about it.
+
+    Files at or under `_INLINE_MAX_BYTES` are sent inline as bytes. Larger files
+    fall back to the Files API, which only works on Gemini 2.5-era models (see
+    `_INLINE_MAX_BYTES`).
+    """
     chosen = _resolve_model(model, "gemini-3.1-pro-preview")
     path = Path(file_path).expanduser().resolve()
     if not path.is_file():
@@ -474,6 +490,23 @@ def gemini_analyze_file(
 
     try:
         client = _ensure_client()
+        if path.stat().st_size <= _INLINE_MAX_BYTES:
+            mime_type = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+            part = genai_types.Part.from_bytes(
+                data=path.read_bytes(),
+                mime_type=mime_type,
+            )
+            response = client.models.generate_content(
+                model=chosen,
+                contents=[prompt, part],
+            )
+            return {
+                "answer": (response.text or "").strip(),
+                "file_uri": "",
+                "inline": True,
+                "model": chosen,
+            }
+
         uploaded = client.files.upload(file=str(path))
         response = client.models.generate_content(
             model=chosen,
@@ -482,6 +515,7 @@ def gemini_analyze_file(
         return {
             "answer": (response.text or "").strip(),
             "file_uri": getattr(uploaded, "uri", "") or getattr(uploaded, "name", ""),
+            "inline": False,
             "model": chosen,
         }
     except Exception as exc:  # noqa: BLE001
