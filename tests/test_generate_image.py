@@ -30,7 +30,7 @@ def test_generate_image_writes_png(
     assert len(result["paths"]) == 1
     assert Path(result["paths"][0]).exists()
     assert Path(result["paths"][0]).read_bytes().startswith(b"\x89PNG")
-    assert result["model"] == "gemini-3.1-flash-image-preview"
+    assert result["model"] == "gemini-3.1-flash-image"
 
 
 def test_generate_image_count_multiple(
@@ -76,4 +76,4 @@ def test_generate_image_wraps_errors(
         prompt="x", output_dir=str(tmp_path), count=1
     )
 
-    assert result == {"error": "no image", "model": "gemini-3.1-flash-image-preview"}
+    assert result == {"error": "no image", "model": "gemini-3.1-flash-image"}

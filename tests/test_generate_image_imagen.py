@@ -36,7 +36,7 @@ def test_imagen_writes_png_via_flash_image(
     assert written.exists()
     assert written.read_bytes().startswith(b"\x89PNG")
     assert written.name.startswith("imagen-")
-    assert result["model"] == "gemini-3.1-flash-image-preview"
+    assert result["model"] == "gemini-3.1-flash-image"
     assert result["deprecated"] is True
     assert "deprecated" in result["deprecation"]
 
@@ -147,7 +147,7 @@ def test_imagen_wraps_errors(
 
     assert result == {
         "error": "quota exceeded",
-        "model": "gemini-3.1-flash-image-preview",
+        "model": "gemini-3.1-flash-image",
         "deprecated": True,
     }
 
@@ -166,9 +166,9 @@ def test_imagen_explicit_imagen_id_is_redirected(
         model="imagen-4.0-ultra-generate-001",
     )
 
-    assert result["model"] == "gemini-3.1-flash-image-preview"
+    assert result["model"] == "gemini-3.1-flash-image"
     call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "gemini-3.1-flash-image-preview"
+    assert call_kwargs["model"] == "gemini-3.1-flash-image"
 
 
 def test_imagen_non_imagen_model_is_honored(
@@ -182,12 +182,12 @@ def test_imagen_non_imagen_model_is_honored(
         prompt="hi",
         output_dir=str(tmp_path),
         count=1,
-        model="gemini-3-pro-image-preview",
+        model="gemini-3-pro-image",
     )
 
-    assert result["model"] == "gemini-3-pro-image-preview"
+    assert result["model"] == "gemini-3-pro-image"
     call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "gemini-3-pro-image-preview"
+    assert call_kwargs["model"] == "gemini-3-pro-image"
 
 
 def test_imagen_env_var_imagen_id_is_redirected(
@@ -205,9 +205,9 @@ def test_imagen_env_var_imagen_id_is_redirected(
         count=1,
     )
 
-    assert result["model"] == "gemini-3.1-flash-image-preview"
+    assert result["model"] == "gemini-3.1-flash-image"
     call_kwargs = mock_genai_client.models.generate_content.call_args.kwargs
-    assert call_kwargs["model"] == "gemini-3.1-flash-image-preview"
+    assert call_kwargs["model"] == "gemini-3.1-flash-image"
 
 
 def test_imagen_rejects_bad_aspect_ratio(

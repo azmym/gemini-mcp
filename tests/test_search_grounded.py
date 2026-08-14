@@ -33,7 +33,7 @@ def test_search_grounded_returns_answer_and_citations(mock_genai_client: MagicMo
         {"url": "https://example.com/a", "title": "Example A"},
         {"url": "https://example.com/b", "title": "Example B"},
     ]
-    assert result["model"] == "gemini-3.5-flash"
+    assert result["model"] == "gemini-3.7-flash"
 
 
 def test_search_grounded_enables_search_tool(mock_genai_client: MagicMock) -> None:
@@ -70,4 +70,4 @@ def test_search_grounded_wraps_errors(mock_genai_client: MagicMock) -> None:
 
     result = server.gemini_search_grounded.fn(prompt="hi")
 
-    assert result == {"error": "search down", "model": "gemini-3.5-flash"}
+    assert result == {"error": "search down", "model": "gemini-3.7-flash"}
