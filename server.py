@@ -6,8 +6,8 @@ Run with: uvx --from "fastmcp[cli]" fastmcp run server.py
 from __future__ import annotations
 
 import os
+import re
 import time
-import concurrent.futures
 import uuid
 from pathlib import Path
 from typing import Any
@@ -20,26 +20,19 @@ mcp = FastMCP("gemini")
 
 _sessions: dict[str, Any] = {}
 _video_ops: dict[str, Any] = {}
-_research_ops: dict[str, Any] = {}
 _client: genai.Client | None = None
-_research_executor: concurrent.futures.ThreadPoolExecutor | None = None
 
 _ALLOWED_ASPECT_RATIOS: frozenset[str] = frozenset({"1:1", "16:9", "9:16", "4:3", "3:4"})
 
+# Interaction states that mean "not finished yet" (see InteractionStatus in the
+# google-genai SDK). Anything else that is not "completed" is terminal-bad.
+_RESEARCH_PENDING: frozenset[str] = frozenset(
+    {"in_progress", "queued", "requires_action"}
+)
 
-def _ensure_research_executor() -> concurrent.futures.ThreadPoolExecutor:
-    """Lazy-init thread pool for Deep Research synchronous calls.
-
-    Deep Research models use the synchronous generateContent endpoint but can
-    take minutes. A background thread keeps the MCP server responsive and
-    makes the polling pair pattern work.
-    """
-    global _research_executor
-    if _research_executor is None:
-        _research_executor = concurrent.futures.ThreadPoolExecutor(
-            max_workers=4, thread_name_prefix="gemini-research"
-        )
-    return _research_executor
+# Cited sources come back as markdown links inside output_text; the Interactions
+# response has no structured citations field.
+_MD_LINK_RE = re.compile(r"\[([^\]]+)\]\((https?://[^)\s]+)\)")
 
 
 def _build_client() -> genai.Client:
@@ -621,27 +614,45 @@ def gemini_start_research(
 ) -> dict[str, Any]:
     """Start a Deep Research synthesis. Returns operation_id; poll with gemini_get_research_report.
 
-    Deep Research is a synchronous SDK call that can take minutes. This tool
-    runs it in a background thread so the MCP server stays responsive.
+    Deep Research models are served ONLY by the Interactions API: calling
+    models.generate_content on them returns 400 "This model only supports
+    Interactions API". The model ID is an *agent*, so it goes in the `agent`
+    field (the `model` field is rejected for it), and `background=True` is
+    mandatory for agent interactions. Interactions are natively asynchronous,
+    so the API's own interaction ID is the operation handle: no local thread
+    pool is needed, and the handle stays valid across a server restart.
     """
     chosen = _resolve_model(model, "deep-research-max-preview-04-2026")
     try:
         client = _ensure_client()
-        executor = _ensure_research_executor()
-        future = executor.submit(
-            client.models.generate_content,
-            model=chosen,
-            contents=prompt,
+        interaction = client.interactions.create(
+            agent=chosen,
+            input=prompt,
+            background=True,
         )
-        op_id = uuid.uuid4().hex[:12]
-        _research_ops[op_id] = future
         return {
-            "operation_id": op_id,
+            "operation_id": interaction.id,
             "model": chosen,
             "message": "Research started. Poll with gemini_get_research_report.",
         }
     except Exception as exc:  # noqa: BLE001
         return {"error": str(exc), "model": chosen}
+
+
+def _research_citations(report: str) -> list[dict[str, str]]:
+    """Extract cited sources from a Deep Research report.
+
+    The Interactions response carries no structured citations field; sources
+    are rendered as markdown links in output_text. Deduplicated, order kept.
+    """
+    citations: list[dict[str, str]] = []
+    seen: set[str] = set()
+    for title, url in _MD_LINK_RE.findall(report):
+        if url in seen:
+            continue
+        seen.add(url)
+        citations.append({"url": url, "title": title})
+    return citations
 
 
 @mcp.tool()
@@ -651,41 +662,32 @@ def gemini_get_research_report(
 ) -> dict[str, Any]:
     """Poll a Deep Research operation started by gemini_start_research.
 
-    Returns status "running", "done" (with path and inline report), "error", or "unknown".
+    Returns status "running", "done" (with path and inline report), or "error".
     """
-    future = _research_ops.get(operation_id)
-    if future is None:
-        return {"status": "unknown", "error": "operation_id not found"}
-
-    if not future.done():
-        return {"status": "running", "operation_id": operation_id}
-
     try:
-        response = future.result()
+        interaction = _ensure_client().interactions.get(operation_id)
     except Exception as exc:  # noqa: BLE001
-        _research_ops.pop(operation_id, None)
         return {"status": "error", "error": str(exc), "operation_id": operation_id}
 
-    try:
-        text_parts: list[str] = []
-        citations: list[dict[str, str]] = []
-        for candidate in response.candidates or []:
-            for part in getattr(candidate.content, "parts", []) or []:
-                if getattr(part, "text", None):
-                    text_parts.append(part.text)
-            metadata = getattr(candidate, "grounding_metadata", None)
-            if metadata is None:
-                continue
-            for chunk in getattr(metadata, "grounding_chunks", []) or []:
-                web = getattr(chunk, "web", None)
-                if web and getattr(web, "uri", None):
-                    citations.append(
-                        {"url": web.uri, "title": getattr(web, "title", "") or ""}
-                    )
+    status = str(getattr(interaction, "status", "") or "")
+    if status in _RESEARCH_PENDING:
+        return {"status": "running", "operation_id": operation_id}
 
-        report = "\n".join(text_parts).strip() or (getattr(response, "text", "") or "")
+    if status != "completed":
+        errors = getattr(interaction, "errors", None) or []
+        detail = "; ".join(
+            str(getattr(e, "message", None) or e) for e in errors
+        )
+        return {
+            "status": "error",
+            "error": f"Deep Research interaction {status}"
+            + (f": {detail}" if detail else ""),
+            "operation_id": operation_id,
+        }
+
+    try:
+        report = (getattr(interaction, "output_text", "") or "").strip()
         if not report:
-            _research_ops.pop(operation_id, None)
             return {
                 "status": "error",
                 "error": "Deep Research returned no text",
@@ -697,16 +699,14 @@ def gemini_get_research_report(
         fname = f"research-{stamp}-{uuid.uuid4().hex[:8]}.md"
         fpath = out / fname
         fpath.write_text(report, encoding="utf-8")
-        _research_ops.pop(operation_id, None)
         return {
             "status": "done",
             "path": str(fpath),
             "report": report,
-            "citations": citations,
+            "citations": _research_citations(report),
             "operation_id": operation_id,
         }
     except Exception as exc:  # noqa: BLE001
-        _research_ops.pop(operation_id, None)
         return {"status": "error", "error": str(exc), "operation_id": operation_id}
 
 

@@ -1,12 +1,15 @@
 [project]
 name = "gemini-mcp"
-version = "0.2.1"
+version = "0.2.2"
 description = "MCP server exposing Google Gemini capabilities via Google AI Studio"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [
     "fastmcp>=3.2.0,<4",
-    "google-genai>=0.3.0",
+    # Deep Research needs the Interactions API. The service rejects the legacy
+    # interactions schema below 2.0.0 with "please upgrade your google-genai
+    # Python SDK to version >= 2.0.0", so this floor is a runtime requirement.
+    "google-genai>=2.0.0",
 ]
 
 [project.scripts]

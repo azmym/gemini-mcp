@@ -45,7 +45,10 @@ def reset_video_ops(monkeypatch: pytest.MonkeyPatch) -> None:
 
 @pytest.fixture
 def reset_research_ops(monkeypatch: pytest.MonkeyPatch) -> None:
-    """Clear the in-memory Deep Research operations dict between tests."""
-    import server
+    """No-op retained for signature stability.
 
-    monkeypatch.setattr(server, "_research_ops", {})
+    Deep Research now uses the Interactions API, which is natively background:
+    the API's interaction ID is the operation handle, so the server keeps no
+    local research state to reset.
+    """
+    return None

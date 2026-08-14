@@ -1,198 +1,228 @@
-"""Tests for gemini_start_research and gemini_get_research_report tools."""
+"""Tests for gemini_start_research and gemini_get_research_report tools.
+
+Deep Research models are served ONLY by the Interactions API. They reject
+`models.generate_content` with 400 "This model only supports Interactions API",
+and the interaction ID belongs in the `agent` field (not `model`) with
+`background=True`. These tests pin that contract.
+"""
 from __future__ import annotations
 
-import concurrent.futures
 from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 
-def _fake_response(
-    text: str = "# Report\n\nFindings.",
-    citations: list[dict] | None = None,
+def _interaction(
+    status: str = "in_progress",
+    output_text: str = "",
+    id: str = "v1_abc123",
+    errors: list | None = None,
 ) -> SimpleNamespace:
-    """Build a fake GenerateContentResponse with text and grounding metadata."""
-    grounding_chunks = []
-    for c in citations or []:
-        web = SimpleNamespace(uri=c["url"], title=c.get("title", ""))
-        grounding_chunks.append(SimpleNamespace(web=web))
-    grounding_metadata = SimpleNamespace(grounding_chunks=grounding_chunks)
-    candidate = SimpleNamespace(
-        content=SimpleNamespace(parts=[SimpleNamespace(text=text)]),
-        grounding_metadata=grounding_metadata,
+    """Build a fake Interaction as returned by client.interactions.create/get."""
+    return SimpleNamespace(
+        id=id,
+        status=status,
+        output_text=output_text,
+        errors=errors,
     )
-    return SimpleNamespace(candidates=[candidate], text=text)
 
 
-def _completed_future(value=None, exc: Exception | None = None) -> concurrent.futures.Future:
-    """Build a Future that is already finished."""
-    fut: concurrent.futures.Future = concurrent.futures.Future()
-    if exc is not None:
-        fut.set_exception(exc)
-    else:
-        fut.set_result(value)
-    return fut
-
-
-def _running_future() -> concurrent.futures.Future:
-    """Build a Future that has not finished yet."""
-    return concurrent.futures.Future()
-
-
-def test_start_research_submits_to_executor(
-    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
+def test_start_research_uses_interactions_agent_field(
+    mock_genai_client: MagicMock, reset_research_ops: None
 ) -> None:
-    submitted = {}
-
-    class FakeExecutor:
-        def submit(self, fn, *args, **kwargs):
-            submitted["fn"] = fn
-            submitted["kwargs"] = kwargs
-            return _completed_future(value=_fake_response())
+    """Regression: deep-research IDs go to interactions.create(agent=...),
+    never models.generate_content(model=...), which returns 400."""
+    mock_genai_client.interactions.create.return_value = _interaction()
 
     import server
-
-    monkeypatch.setattr(server, "_ensure_research_executor", lambda: FakeExecutor())
 
     result = server.gemini_start_research.fn(prompt="What is X?")
 
-    assert "operation_id" in result
-    op_id = result["operation_id"]
-    assert isinstance(op_id, str) and len(op_id) >= 8
+    mock_genai_client.models.generate_content.assert_not_called()
+    mock_genai_client.interactions.create.assert_called_once()
+    kwargs = mock_genai_client.interactions.create.call_args.kwargs
+    assert kwargs["agent"] == "deep-research-max-preview-04-2026"
+    assert kwargs["input"] == "What is X?"
+    assert kwargs["background"] is True
+    assert "model" not in kwargs
+
+    assert result["operation_id"] == "v1_abc123"
     assert result["model"] == "deep-research-max-preview-04-2026"
     assert "gemini_get_research_report" in result.get("message", "")
-    assert op_id in server._research_ops
-    assert submitted["fn"] is mock_genai_client.models.generate_content
-    assert submitted["kwargs"]["model"] == "deep-research-max-preview-04-2026"
-    assert submitted["kwargs"]["contents"] == "What is X?"
 
 
-def test_start_research_wraps_executor_errors(
-    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
+def test_start_research_returns_api_interaction_id(
+    mock_genai_client: MagicMock, reset_research_ops: None
 ) -> None:
-    class BoomExecutor:
-        def submit(self, fn, *args, **kwargs):
-            raise RuntimeError("dr down")
+    """The operation_id must be the API's interaction id so it survives a
+    server restart, unlike the old locally-generated uuid."""
+    mock_genai_client.interactions.create.return_value = _interaction(id="v1_zzz999")
 
     import server
-
-    monkeypatch.setattr(server, "_ensure_research_executor", lambda: BoomExecutor())
 
     result = server.gemini_start_research.fn(prompt="hi")
 
-    assert result == {"error": "dr down", "model": "deep-research-max-preview-04-2026"}
-    assert server._research_ops == {}
+    assert result["operation_id"] == "v1_zzz999"
 
 
 def test_start_research_model_override(
-    mock_genai_client: MagicMock, reset_research_ops: None, monkeypatch
+    mock_genai_client: MagicMock, reset_research_ops: None
 ) -> None:
-    submitted = {}
-
-    class FakeExecutor:
-        def submit(self, fn, *args, **kwargs):
-            submitted["kwargs"] = kwargs
-            return _completed_future(value=_fake_response())
+    mock_genai_client.interactions.create.return_value = _interaction()
 
     import server
-
-    monkeypatch.setattr(server, "_ensure_research_executor", lambda: FakeExecutor())
 
     result = server.gemini_start_research.fn(
         prompt="hi", model="deep-research-pro-preview-12-2025"
     )
 
     assert result["model"] == "deep-research-pro-preview-12-2025"
-    assert submitted["kwargs"]["model"] == "deep-research-pro-preview-12-2025"
+    kwargs = mock_genai_client.interactions.create.call_args.kwargs
+    assert kwargs["agent"] == "deep-research-pro-preview-12-2025"
 
 
-def test_get_research_report_unknown_id(
-    reset_research_ops: None,
+def test_start_research_wraps_api_errors(
+    mock_genai_client: MagicMock, reset_research_ops: None
 ) -> None:
+    mock_genai_client.interactions.create.side_effect = RuntimeError("dr down")
+
     import server
 
-    result = server.gemini_get_research_report.fn(operation_id="nope")
+    result = server.gemini_start_research.fn(prompt="hi")
 
-    assert result == {"status": "unknown", "error": "operation_id not found"}
+    assert result == {"error": "dr down", "model": "deep-research-max-preview-04-2026"}
 
 
 def test_get_research_report_running(
-    reset_research_ops: None,
+    mock_genai_client: MagicMock, reset_research_ops: None
 ) -> None:
+    mock_genai_client.interactions.get.return_value = _interaction(status="in_progress")
+
     import server
 
-    server._research_ops["op1"] = _running_future()
-
-    result = server.gemini_get_research_report.fn(operation_id="op1")
+    result = server.gemini_get_research_report.fn(operation_id="v1_abc123")
 
     assert result["status"] == "running"
-    assert result["operation_id"] == "op1"
-    assert "op1" in server._research_ops
+    assert result["operation_id"] == "v1_abc123"
+
+
+def test_get_research_report_queued_is_running(
+    mock_genai_client: MagicMock, reset_research_ops: None
+) -> None:
+    """queued is a pre-completion state and must not read as done or error."""
+    mock_genai_client.interactions.get.return_value = _interaction(status="queued")
+
+    import server
+
+    result = server.gemini_get_research_report.fn(operation_id="v1_abc123")
+
+    assert result["status"] == "running"
 
 
 def test_get_research_report_done_writes_markdown(
-    tmp_path: Path,
-    reset_research_ops: None,
+    mock_genai_client: MagicMock, reset_research_ops: None, tmp_path: Path
 ) -> None:
-    response = _fake_response(
-        text="# Big Report\n\nContent.",
-        citations=[
-            {"url": "https://a.example", "title": "A"},
-            {"url": "https://b.example", "title": "B"},
-        ],
+    report = "# Big Report\n\nParis is the capital [1]."
+    mock_genai_client.interactions.get.return_value = _interaction(
+        status="completed", output_text=report
     )
 
     import server
 
-    server._research_ops["op2"] = _completed_future(value=response)
-
     result = server.gemini_get_research_report.fn(
-        operation_id="op2", output_dir=str(tmp_path)
+        operation_id="v1_abc123", output_dir=str(tmp_path)
     )
 
     assert result["status"] == "done"
-    assert result["operation_id"] == "op2"
-    assert result["report"] == "# Big Report\n\nContent."
-    assert result["citations"] == [
-        {"url": "https://a.example", "title": "A"},
-        {"url": "https://b.example", "title": "B"},
-    ]
+    assert result["report"] == report
     written = Path(result["path"])
     assert written.exists()
-    assert written.read_text(encoding="utf-8") == "# Big Report\n\nContent."
+    assert written.read_text(encoding="utf-8") == report
     assert written.name.startswith("research-")
     assert written.suffix == ".md"
-    assert "op2" not in server._research_ops
 
 
-def test_get_research_report_future_raised(
-    reset_research_ops: None,
+def test_get_research_report_extracts_inline_citations(
+    mock_genai_client: MagicMock, reset_research_ops: None, tmp_path: Path
 ) -> None:
-    import server
-
-    server._research_ops["op3"] = _completed_future(exc=RuntimeError("synthesis failed"))
-
-    result = server.gemini_get_research_report.fn(operation_id="op3")
-
-    assert result["status"] == "error"
-    assert "synthesis failed" in result["error"]
-    assert "op3" not in server._research_ops
-
-
-def test_get_research_report_empty_text_is_error(
-    tmp_path: Path,
-    reset_research_ops: None,
-) -> None:
-    response = SimpleNamespace(candidates=[], text="")
+    """Interactions returns no structured citations field; the cited sources
+    arrive as markdown links inside output_text."""
+    report = (
+        "Findings.\n\n**Sources:**\n"
+        "1. [depaul.edu](https://example.com/a)\n"
+        "2. [wikipedia.org](https://example.com/b)\n"
+    )
+    mock_genai_client.interactions.get.return_value = _interaction(
+        status="completed", output_text=report
+    )
 
     import server
-
-    server._research_ops["op4"] = _completed_future(value=response)
 
     result = server.gemini_get_research_report.fn(
-        operation_id="op4", output_dir=str(tmp_path)
+        operation_id="v1_abc123", output_dir=str(tmp_path)
+    )
+
+    assert result["citations"] == [
+        {"url": "https://example.com/a", "title": "depaul.edu"},
+        {"url": "https://example.com/b", "title": "wikipedia.org"},
+    ]
+
+
+def test_get_research_report_failed_status_is_error(
+    mock_genai_client: MagicMock, reset_research_ops: None
+) -> None:
+    mock_genai_client.interactions.get.return_value = _interaction(
+        status="failed", errors=[SimpleNamespace(message="synthesis failed")]
+    )
+
+    import server
+
+    result = server.gemini_get_research_report.fn(operation_id="v1_abc123")
+
+    assert result["status"] == "error"
+    assert "failed" in result["error"].lower()
+
+
+def test_get_research_report_budget_exceeded_is_error(
+    mock_genai_client: MagicMock, reset_research_ops: None
+) -> None:
+    mock_genai_client.interactions.get.return_value = _interaction(
+        status="budget_exceeded"
+    )
+
+    import server
+
+    result = server.gemini_get_research_report.fn(operation_id="v1_abc123")
+
+    assert result["status"] == "error"
+    assert "budget_exceeded" in result["error"]
+
+
+def test_get_research_report_completed_but_empty_is_error(
+    mock_genai_client: MagicMock, reset_research_ops: None, tmp_path: Path
+) -> None:
+    mock_genai_client.interactions.get.return_value = _interaction(
+        status="completed", output_text=""
+    )
+
+    import server
+
+    result = server.gemini_get_research_report.fn(
+        operation_id="v1_abc123", output_dir=str(tmp_path)
     )
 
     assert result["status"] == "error"
     assert "no text" in result["error"].lower()
-    assert "op4" not in server._research_ops
+
+
+def test_get_research_report_wraps_api_errors(
+    mock_genai_client: MagicMock, reset_research_ops: None
+) -> None:
+    mock_genai_client.interactions.get.side_effect = RuntimeError("404 not found")
+
+    import server
+
+    result = server.gemini_get_research_report.fn(operation_id="nope")
+
+    assert result["status"] == "error"
+    assert "404 not found" in result["error"]
