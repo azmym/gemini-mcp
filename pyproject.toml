@@ -9,7 +9,9 @@ dependencies = [
     # Deep Research needs the Interactions API. The service rejects the legacy
     # interactions schema below 2.0.0 with "please upgrade your google-genai
     # Python SDK to version >= 2.0.0", so this floor is a runtime requirement.
-    "google-genai>=2.0.0",
+    # 2.18.1 is also the floor verified against AI Studio Authorization keys
+    # (the new "AQ."-prefixed format); older 2.x releases may predate them.
+    "google-genai>=2.18.1",
 ]
 
 [project.scripts]

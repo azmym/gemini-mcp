@@ -4,6 +4,7 @@ from __future__ import annotations
 import importlib
 
 import pytest
+from google import genai
 
 
 def test_server_raises_when_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> None:
@@ -12,6 +13,17 @@ def test_server_raises_when_api_key_missing(monkeypatch: pytest.MonkeyPatch) -> 
 
     with pytest.raises(RuntimeError, match="GEMINI_API_KEY"):
         server._build_client()
+
+
+def test_build_client_accepts_authorization_key_format(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """AI Studio Authorization keys ("AQ."-prefixed) build a client like legacy
+    "AIza" keys; the server must never reject keys on their format."""
+    monkeypatch.setenv("GEMINI_API_KEY", "AQ.Ab-test-key-not-real")
+    import server
+
+    assert isinstance(server._build_client(), genai.Client)
 
 
 def test_resolve_uses_explicit_model_when_provided(monkeypatch: pytest.MonkeyPatch) -> None:

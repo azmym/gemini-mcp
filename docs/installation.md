@@ -6,7 +6,7 @@ This guide covers installing and registering the `gemini-mcp` server with Claude
 
 - **Python 3.11 or later.** Check with `python3 --version`.
 - **[`uv`](https://docs.astral.sh/uv/).** Install with `curl -LsSf https://astral.sh/uv/install.sh | sh` (or `brew install uv` on macOS).
-- **A Google AI Studio API key.** Create one at https://aistudio.google.com/app/apikey. This is a Google AI Studio key, not a Vertex AI service account.
+- **A Google AI Studio API key.** Create one at https://aistudio.google.com/app/apikey. This is a Google AI Studio key, not a Vertex AI service account. Newly created keys start with `AQ.` (the Authorization key format); legacy `AIza` keys also work. No configuration difference — both go in `GEMINI_API_KEY`.
 - **Claude Code** (for Options A and B). Other MCP clients work too; the `claude mcp add` commands below are Claude-Code-specific.
 
 ## Option A: install directly from GitHub

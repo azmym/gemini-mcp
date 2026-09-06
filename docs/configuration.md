@@ -6,7 +6,7 @@ The server is configured entirely through environment variables. No config files
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Google AI Studio API key. Create one at https://aistudio.google.com/app/apikey. Must be a Google AI Studio key; Vertex AI keys are not supported. |
+| `GEMINI_API_KEY` | Yes | Google AI Studio API key. Create one at https://aistudio.google.com/app/apikey. Must be a Google AI Studio key; Vertex AI keys are not supported. AI Studio now issues Authorization keys starting with `AQ.` — both the new `AQ.` format and legacy `AIza` keys are accepted. |
 | `GEMINI_DEFAULT_MODEL` | No | Overrides the default model for every tool globally. Any model string accepted by the Google AI Studio API. |
 
 Both variables are read at server startup. Changing them requires restarting the MCP server (e.g., re-registering with `claude mcp add`, or restarting Claude Code if Option B is used).

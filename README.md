@@ -150,7 +150,7 @@ claude mcp list
 
 | Variable | Required | Description |
 |---|---|---|
-| `GEMINI_API_KEY` | Yes | Google AI Studio API key (https://aistudio.google.com/app/apikey) |
+| `GEMINI_API_KEY` | Yes | Google AI Studio API key (https://aistudio.google.com/app/apikey). AI Studio now issues Authorization keys starting with `AQ.`; both the new `AQ.` format and legacy `AIza` keys work |
 | `GEMINI_DEFAULT_MODEL` | No | Overrides the default model for every tool globally |
 
 ## Model selection
