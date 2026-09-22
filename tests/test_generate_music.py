@@ -33,7 +33,7 @@ def test_generate_music_writes_wav(
     assert written.read_bytes().startswith(b"RIFF")
     assert written.name.startswith("lyria-")
     assert written.suffix == ".wav"
-    assert result["model"] == "lyria-3-pro-preview"
+    assert result["model"] == "lyria-3.5"
 
 
 def test_generate_music_creates_output_dir(
@@ -81,7 +81,7 @@ def test_generate_music_wraps_errors(
         output_dir=str(tmp_path),
     )
 
-    assert result == {"error": "lyria down", "model": "lyria-3-pro-preview"}
+    assert result == {"error": "lyria down", "model": "lyria-3.5"}
 
 
 def test_generate_music_model_override(

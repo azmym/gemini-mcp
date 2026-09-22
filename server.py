@@ -271,7 +271,7 @@ def gemini_generate_music(
     duration field for AUDIO modality. Encode duration hints in the prompt
     until the SDK exposes it.
     """
-    chosen = _resolve_model(model, "lyria-3-pro-preview")
+    chosen = _resolve_model(model, "lyria-3.5")
     if duration_seconds <= 0:
         return {"error": "duration_seconds must be > 0", "model": chosen}
     try:
@@ -436,7 +436,7 @@ def gemini_search_grounded(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Text generation grounded with Google Search. Returns answer and citations."""
-    chosen = _resolve_model(model, "gemini-3.7-flash")
+    chosen = _resolve_model(model, "gemini-3.8-flash")
     try:
         client = _ensure_client()
         config = genai_types.GenerateContentConfig(
@@ -530,7 +530,7 @@ def gemini_chat(
     model: str | None = None,
 ) -> dict[str, Any]:
     """Multi-turn chat keyed by session_id. State lives in memory for server lifetime."""
-    chosen = _resolve_model(model, "gemini-3.7-flash")
+    chosen = _resolve_model(model, "gemini-3.8-flash")
     try:
         client = _ensure_client()
         session = _sessions.get(session_id)
